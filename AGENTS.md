@@ -12,6 +12,7 @@
 ## 一、开局必做（每个新会话）
 
 1. `state_read()` 恢复状态；`project_status()` 看索引/worktree/提交概况。
+   brain 未连接则先 `tools/services.sh start brain`（常驻 HTTP MCP，端点 127.0.0.1:8939/mcp）。
 2. `recall()`（语义记忆）查与本次目标相关的历史结论，避免重复调研。
 3. 读 `docs/PROJECT_STATE.md` 与 `docs/TODO.md` 镜像。
 4. 索引为空则先在仓库根后台跑 `tools/.venv/bin/python tools/brain/index.py all`。
@@ -49,6 +50,9 @@
 - **文件域隔离优先**：派发前给每个任务声明 `files_scope`，重叠域的任务串行或明确合并顺序。
 - **并行度 2~4**：超过 4 个并发 coder 时冲突与审查积压风险大于收益。
 - **合并串行**：任何时刻只允许一个 review-merge 在动 main。
+- **批量合并会话**：并行完成的多个分支尽量交给**同一个** review-merge 会话顺序
+  审查+合并（一次会话过完 main 锁，省去每分支单独派会的开销）；仅当单分支
+  审查异常复杂才拆独立会话。
 - coder 死循环/超时 → 废弃分支（`git worktree remove` + 删分支 + status=aborted）
   重新拆卡，不救活烂摊子。
 
@@ -99,8 +103,8 @@ tmp/legacy/           上游/老版本源码（考古对象，可按项目改名
 tmp/refs/             平台 API、官方文档、同类现代参考实现
 tmp/mappings/         可选：名称映射表（mappings_lookup 用）
 tmp/index/            RAG 索引与日志（gitignore）
-tools/brain/          检索与记忆工具链（MCP 服务器 brain）
-tools/*.sh            可选的本地嵌入/精排推理服务
+tools/brain/          检索与记忆工具链（brain MCP = 常驻 HTTP 服务 :8939/mcp）
+tools/services.sh     服务总线：start|stop|restart|status × brain|embed|rerank
 .zcode/agents/        五角色 subagent 模板
 .zcode/commands/      各角色派发快捷命令（/architect /coder ...）
 .zcode/skills/        context-loader（会话装载）/ knowledge（写入规范）

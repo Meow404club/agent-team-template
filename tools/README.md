@@ -31,18 +31,40 @@ $VENV tools/brain/index.py --limit-files 5 all # 小规模试跑
 # 索引规模总览用 MCP 工具 project_status()，或看 tmp/index/ 下的日志
 ```
 
-## 可选：本地推理服务（ZCode 会话前先拉起）
+## MCP 服务器：常驻 HTTP 守护（:8939/mcp）
+
+brain 不是 ZCode 自动拉起的 stdio 进程，而是独立守护进程（主会话与 subagent 共享
+同一实例）。刻意不用 FastMCP：anyio 线程层在长驻 stdio 进程中出现过工具调用卡死。
+现实现为 ThreadingHTTPServer + POST /mcp 同步 JSON-RPC（单条/batch）+ GET /health
+探活 + Mcp-Session-Id 会话，仅用 Python 标准库。`.zcode/config.json` 以 `type:http`
+直连端点。
 
 ```bash
-LLAMA_BIN=<llama-server 路径> MODEL=<嵌入模型.gguf> tools/embed_server.sh   # → 127.0.0.1:8937
-LLAMA_BIN=<llama-server 路径> MODEL=<精排模型.gguf> tools/rerank_server.sh  # → 127.0.0.1:8938
+tools/services.sh start brain     # 起服务（日志 tmp/index/brain-server.log）
+curl -s 127.0.0.1:8939/health     # 探活 {"status":"ok","tools":16,...}
+tools/services.sh status          # 三服务总览
 ```
 
-不部署本地服务时，把 `tools/config.json` 的 `base_url` 指向任意 OpenAI 兼容
-中转/API 即可。精排服务缺席时检索自动降级为纯融合排序（不报错）。
+烟测示例：
 
-llama.cpp 两个坑：`--ctx-size` 是总 KV 上下文（会被槽平分）；rerank 物理批
-`-ub` 必须 ≥ 单条输入 token 数（默认 512 会 500，脚本已设 4096）。
+```bash
+curl -s 127.0.0.1:8939/mcp -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | head -c 300
+```
+
+## 服务总线
+
+```bash
+tools/services.sh {start|stop|restart|status} [brain|embed|rerank|all]
+```
+
+- `brain`：上文的 MCP 守护（无需 GPU/额外依赖）
+- `embed`：复用 `embed_server.sh`（需 `LLAMA_BIN` 指向 llama-server，模型放
+  `tmp/models/` 或用 `MODEL` 环境变量）
+- `rerank`：内联参数起 llama-server `--rerank`（需 `LLAMA_BIN`；模型
+  `RERANK_MODEL` 环境变量，默认 `tmp/models/Qwen3-Reranker-0.6B.Q8_0.gguf`）
+- 探活只认 HTTP 200（llama 模型加载期 /health 是 503）；按监听端口精准启停，
+  不误杀无关进程
 
 ## 可选：映射表查询
 

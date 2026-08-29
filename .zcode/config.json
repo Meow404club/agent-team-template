@@ -2,12 +2,8 @@
   "mcp": {
     "servers": {
       "brain": {
-        "type": "stdio",
-        "command": "tools/.venv/bin/python",
-        "args": [
-          "tools/brain/server.py"
-        ],
-        "timeoutMs": 60000
+        "type": "http",
+        "url": "http://127.0.0.1:8939/mcp"
       }
     }
   }

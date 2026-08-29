@@ -49,7 +49,10 @@ cd my-project && rm -rf .git && git init -b main
 # 3) 定制（详见下方"必改清单"），然后建索引
 tools/.venv/bin/python tools/brain/index.py all
 
-# 4) 用 ZCode 打开 my-project —— 确认 MCP 面板里 brain 已连接
+# 4) 起常驻服务：brain MCP 必启（HTTP :8939/mcp）；embed/rerank 可选（需 LLAMA_BIN）
+tools/services.sh start          # 或 tools/services.sh start brain
+
+# 5) 用 ZCode 打开 my-project —— 确认 MCP 面板里 brain 已连接
 #    第一句话就说：恢复上下文，开始 <你的目标>
 ```
 
@@ -82,25 +85,27 @@ tools/.venv/bin/python tools/brain/index.py all
 
 ## FAQ
 
-- **MCP brain 未连接**：确认已跑 `scripts/setup.sh`（生成 `tools/.venv`）；若
-  ZCode 不解析相对路径，把 `.zcode/config.json` 的 command/args 改成绝对路径后重启会话。
+- **MCP brain 未连接**：brain 是常驻 HTTP 服务（127.0.0.1:8939/mcp），不是 ZCode
+  自动拉起的 stdio 进程——先跑 `tools/services.sh start brain`（或 status 看状态），
+  再重启/重连 ZCode 会话。刻意不用 FastMCP/stdio：anyio 线程层在长驻进程里会卡死
+  工具调用，HTTP 守护还能让主会话与 subagent 共享同一实例、随时探活重启。
 - **git commit 被拦**：这是钩子在强制 GPG——用 `git commit -S -s`，消息含
   `<type>(<scope>): <主题>` + `Task:` 行。
-- **search_code 报嵌入服务不可达**：没起本地服务时改用远端 API 配置，或先起
-  `tools/embed_server.sh`。
+- **search_code 报嵌入服务不可达**：没起本地服务时改用远端 API 配置，或
+  `tools/services.sh start embed`。
 - **include 匹配不到文件**：`**` 是 fnmatch 语义（非递归），根目录文件要单独写一条。
 
 ## 目录结构
 
 ```
 AGENTS.md            组织者宪法（主 Agent 专用，subagent 不加载）
-.zcode/config.json   MCP 服务器 brain 注册
+.zcode/config.json   MCP 服务器 brain 注册（type:http → 127.0.0.1:8939/mcp）
 .zcode/agents/       五角色 subagent 模板（系统提示词）
 .zcode/commands/     /architect /researcher /coder /review-merge /debugger
 .zcode/skills/       context-loader · knowledge（记忆写入规范）
 .githooks/           GPG 双层强制钩子 + 注册说明
-tools/brain/         RAG 检索 + 记忆后端（MCP 服务器）
-tools/*.sh           可选本地嵌入/精排推理服务
+tools/brain/         RAG 检索 + 记忆后端（常驻 HTTP MCP 守护，纯标准库协议壳）
+tools/services.sh    服务总线：brain / embed / rerank 三服务统一启停
 scripts/setup.sh     一键初始化
 docs/                状态镜像（PROJECT_STATE/TODO/RESEARCH-NOTES）
 tmp/                 外部资料（老源码/参考实现/映射表）+ 索引（gitignore）

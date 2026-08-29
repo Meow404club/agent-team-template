@@ -46,6 +46,7 @@ cat <<'NEXT'
        tools/.venv/bin/python tools/brain/index.py all
   3. AGENTS.md + .zcode/agents/*.md —— 占位符换成你的 sources key 与领域红线
 
-可选：本地 GPU 推理 tools/embed_server.sh + tools/rerank_server.sh（见 tools/README.md）
+可选：tools/services.sh start brain —— 常驻 brain MCP 服务（ZCode 会话前先起，
+embed/rerank 需 LLAMA_BIN）；详见 tools/README.md
 可选：PreToolUse 钩子注册到用户级（见 .githooks/README.md）
 NEXT

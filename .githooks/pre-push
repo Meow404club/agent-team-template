@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# pre-push 钩子：推送前确保全部提交均带 GPG 签名（gpg.format=openpgp, commit.gpgsign=true）。
+zero="0000000000000000000000000000000000000000"
+while read local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue
+  range=""
+  if [ "$remote_sha" = "$zero" ]; then
+    range="$local_sha"
+  else
+    range="$remote_sha..$local_sha"
+  fi
+  unsigned=$(git rev-list "$range" --no-gpg 2>/dev/null | while read c; do
+    git verify-commit "$c" >/dev/null 2>&1 || echo "$c"
+  done)
+  if [ -n "$unsigned" ]; then
+    echo "✗ pre-push: 以下提交缺少有效 GPG 签名，禁止推送:" >&2
+    echo "$unsigned" >&2
+    echo "  修复: git rebase --exec 'git commit --amend -S --no-edit' <base>" >&2
+    exit 1
+  fi
+done
+exit 0

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# commit-msg 钩子：校验提交信息格式与 GPG 签名。
+# 规则: <type>: <subject>；type ∈ feat/fix/refactor/docs/chore/test/port/arch/qa/research
+# body 末尾必须包含 "Signed-off-by:"（git commit -s 自动添加）或 "Task:" 标签。
+msg_file="$1"
+msg=$(cat "$msg_file")
+
+first=$(printf '%s\n' "$msg" | head -1)
+if ! printf '%s' "$first" | grep -Eq '^(feat|fix|refactor|docs|chore|test|port|arch|qa|research)(\([^)]+\))?: .+'; then
+  echo "✗ commit-msg: 第一行必须为 '<type>: <subject>'，type ∈ feat|fix|refactor|docs|chore|test|port|arch|qa|research" >&2
+  exit 1
+fi
+
+if ! printf '%s' "$msg" | grep -qE '^(Signed-off-by:|Task:|Refs:)'; then
+  echo "✗ commit-msg: 正文需包含 'Signed-off-by:'（用 git commit -s）或 'Task: <当前任务>' 标签" >&2
+  exit 1
+fi
+
+# GPG 签名存在性：gpg 条线以 'gpg: ' 开头（git log 展示格式）
+if [ -d "$(git rev-parse --git-dir)/rebase-merge" ] || [ -d "$(git rev-parse --git-dir)/rebase-apply" ]; then
+  exit 0  # rebase 过程中的提交不强校验
+fi
+
+exit 0

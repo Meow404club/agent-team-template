@@ -1,0 +1,17 @@
+{
+  "embedding": {
+    "_note": "backend = 任意 OpenAI 兼容 /embeddings 端点。local: llama-server (tools/embed_server.sh)；remote: 换 base_url/model/api_key 即可",
+    "base_url": "http://127.0.0.1:8937/v1",
+    "api_key": null,
+    "model": "Qwen3-Embedding-4B-Q8_0",
+    "batch_size": 32,
+    "max_batch_tokens": 30000,
+    "max_item_chars": 12000,
+    "request_workers": 10,
+    "interactive_timeout_s": 15,
+    "interactive_retries": 1,
+    "batch_timeout_s": 240,
+    "truncate_dims": 0,
+    "query_instruction": "Instruct: Given a search query about <你的项目领域：语言/框架/主题>, retrieve relevant source code or documentation passages that answer the query\nQuery: "
+  }
+}

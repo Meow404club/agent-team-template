@@ -1,0 +1,4 @@
+mcp<2
+numpy
+tree_sitter
+tree_sitter_java

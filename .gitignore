@@ -1,0 +1,21 @@
+# 外部资料与生成物（体积大，不入库）
+tmp/
+tools/.venv/
+tools/**/__pycache__/
+
+# 随项目定制的本地配置（模板是 *.example.json）
+tools/config.json
+tools/sources.json
+
+# 本地密钥覆盖
+.zcode/config.local.json
+
+# IDE
+.idea/
+.vscode/
+
+# 构建产物
+.gradle/
+build/
+dist/
+node_modules/

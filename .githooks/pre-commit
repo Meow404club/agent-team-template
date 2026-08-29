@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# pre-commit 钩子：阻止把大文件、密钥、生成物提交进仓库。
+staged=$(git diff --cached --name-only)
+fail=0
+for f in $staged; do
+  case "$f" in
+    tmp/*|tools/.venv/*|.zcode/config.local.json|tools/config.json)
+      echo "✗ pre-commit: 禁止提交 $f（生成物/密钥，见 .gitignore）" >&2
+      fail=1 ;;
+  esac
+  if [ -f "$f" ]; then
+    size=$(stat -c %s "$f" 2>/dev/null || echo 0)
+    if [ "$size" -gt 5242880 ]; then
+      echo "✗ pre-commit: $f 超过 5MB（$size 字节），禁止提交" >&2
+      fail=1
+    fi
+    if head -c 4096 "$f" 2>/dev/null | grep -qE 'sk-[A-Za-z0-9]{20,}'; then
+      echo "✗ pre-commit: $f 疑似包含 API 密钥，禁止提交" >&2
+      fail=1
+    fi
+  fi
+done
+# tools/config.json 属于密钥文件，即便被强制 add 也拦截
+if git diff --cached --name-only | grep -q '^tools/config\.json$'; then
+  echo "✗ pre-commit: tools/config.json 含密钥，禁止提交（模板是 tools/config.example.json）" >&2
+  fail=1
+fi
+exit $fail

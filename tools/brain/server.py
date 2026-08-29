@@ -98,7 +98,7 @@ def remember(kind: str, text: str) -> str:
 
 @mcp.tool()
 def recall(query: str, k: int = 8, kind: str | None = None) -> str:
-    """语义回忆历史记忆（带时效衰减，活跃优先）。会话开始、动手前先 recall，避免重复考古。"""
+    """语义回忆历史记忆（带时效衰减，活跃优先）。会话开始、动手前先 recall，避免重复调研。"""
     try:
         return _j(M.recall(query, k, kind))
     except Exception as e:

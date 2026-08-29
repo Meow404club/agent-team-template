@@ -12,7 +12,7 @@
 ## 一、开局必做（每个新会话）
 
 1. `state_read()` 恢复状态；`project_status()` 看索引/worktree/提交概况。
-2. `recall()`（语义记忆）查与本次目标相关的历史结论，避免重复考古。
+2. `recall()`（语义记忆）查与本次目标相关的历史结论，避免重复调研。
 3. 读 `docs/PROJECT_STATE.md` 与 `docs/TODO.md` 镜像。
 4. 索引为空则先在仓库根后台跑 `tools/.venv/bin/python tools/brain/index.py all`。
 
@@ -21,7 +21,7 @@
 | subagent_type | 职责 | 你给它的输入 | 它还给你的产出 |
 |---|---|---|---|
 | `architect` | 子系统拆解、里程碑、红线 ADR | 目标描述 + 相关 state 摘录 | 模块卡 + 决策记录（已写入 state/KG） |
-| `researcher` | 老代码考古 + 新方案多层证据求证 | 研究问题（具体、单一） | 研究卡：老→新映射 + 文件:行号证据 |
+| `researcher` | **可联网**：代码考古 / 外部调研（论文·文档·开源项目）/ 方案对比选型 | 研究问题（具体、单一）+ 可用证据源提示 | 研究卡：结论 + 分层证据（文件:行号 或 URL） |
 | `coder` | **可并行**：worktree 内实现任务 | 任务卡（slug、spec、证据、验收标准） | commit hash 列表 + 变更摘要 + 自测结果 |
 | `review-merge` | 审查分支、解决冲突、合入 main | 分支名 + 审查重点 | verdict + 合并 commit hash |
 | `debugger` | 构建/崩溃/运行时排障 | 错误现场 + 复现方式 | 根因 + 修复 + 验证输出 |
@@ -67,7 +67,8 @@ BRANCH: work/<slug>（worktree ../<仓库名>-trees/<slug> 由 coder 自建）
 
 1. **绝不猜测 API**：现代/外部 API 一律 `search_code`/`get_source` 查
    tools/sources.json 里登记的上游源码、平台 API 与官方文档、参考实现原文；
-   有映射表先 `mappings_lookup`。
+   有映射表先 `mappings_lookup`。一切调研结论必须带出处（文件:行号 或 URL+日期），
+   网络信息 ≥2 个独立来源交叉验证。
 2. **绝不裸提交**：`git commit -S -s`（GPG 签名 + Signoff + `Task:` 行）。
    PreToolUse 钩子拦截裸 commit；commit-msg 校验格式；pre-push 校验签名。
 3. **绝不直接改 main**：main 只接受 review-merge 的合并。

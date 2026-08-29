@@ -12,7 +12,7 @@
               └──────┬───────────┬───────────┬─────────────┘
         ┌────────────┼───────────┼───────────┼──────────────┐
    architect    researcher   coder ×2~4   review-merge   debugger
-   模块卡/ADR    老→新映射研究  worktree实现  审查+合并main   根因+修复
+   模块卡/ADR    调研/查证/选型  worktree实现  审查+合并main   根因+修复
         └────────────┴───────────┴─────┬─────┴──────────────┘
                                        │
                     brain MCP（tools/brain/，SQLite）
@@ -72,7 +72,8 @@ tools/.venv/bin/python tools/brain/index.py all
 
 ## 日常使用（主会话）
 
-- `/architect <目标>` 拆解系统出模块卡；`/researcher <问题>` 求证老→新映射
+- `/architect <目标>` 拆解系统出模块卡；`/researcher <问题>` 调研查证
+  （代码考古 / 联网调研 / 方案选型）
 - `/coder <任务卡>` 并行派发实现（2~4 个，文件域不重叠）；返回 hash 后立即
   `/review-merge work/<slug>` 串行合并
 - `/debugger <症状>` 排障；每次合并/决策/bug 后自动落账 state + KG + 语义记忆

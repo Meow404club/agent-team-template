@@ -15,7 +15,8 @@ description: "知识与状态记忆的写入规范：remember/recall 语义记�
 
 ## 语义记忆（remember）
 
-- `kind` 规范：`decision`（架构决策）| `research`（考古结论）| `bug`（根因+修法）|
+- `kind` 规范：`decision`（架构决策）| `research`（调研结论：代码考古/联网调研/选型）|
+  `bug`（根因+修法）|
   `merge`（合入记录）| `handoff`（跨会话交接）| `lesson`（踩坑教训）。
 - text 里**必须带证据**（文件:行号），因为它是会被 `recall` 语义召回的独立知识单元。
 
@@ -25,8 +26,8 @@ description: "知识与状态记忆的写入规范：remember/recall 语义记�
 子系统 `SYS_`、参考项目 `REF_`、概念直接用名词（如 `RetryPolicy`）。
 （项目可按领域扩充前缀：材质 TEX_、配方 RECIPE_ 等。）
 
-必须记录的关系：`MAPS_TO`（老→新，考古最重要产出）、`DOES`/`OWNS`（职责）、
-`DEPENDS_ON`（改动波及面）、`UPGRADES_TO`/`REPLACED_BY`、
+必须记录的关系：`MAPS_TO`（老→新，代码考古最重要产出）、`DOES`/`OWNS`（职责）、
+`DEPENDS_ON`（改动波及面）、`UPGRADES_TO`/`REPLACED_BY`/`SUPERSEDED_BY`（新旧/替代）、
 `BLOCKED_BY`（任务依赖）、`TRAPS`（陷阱→正确做法）、`LANDED`（已合入 main）。
 `node_types`：Class|System|API|Concept|Task|Material。
 
@@ -42,4 +43,4 @@ description: "知识与状态记忆的写入规范：remember/recall 语义记�
 ## 读规则
 
 任何 Agent 动手前：`recall()` + `state_read()` + `kg_search()` 先行——
-已有结论不许重新考古一遍。
+已有结论不许重新调研一遍。

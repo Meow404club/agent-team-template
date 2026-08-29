@@ -8,7 +8,7 @@ description: "项目会话上下文装载器。每次会话开始、或任何 Ag
 在开始任何工作之前，按顺序执行：
 
 1. 用 MCP 工具 `state_read` 读取全部项目状态（tasks 任务板 / decisions / known_bugs / progress / architecture）。
-2. 用 `recall("<本次目标关键词>")` 语义回忆历史结论（研究/决策/交接），避免重复考古。
+2. 用 `recall("<本次目标关键词>")` 语义回忆历史结论（研究/决策/交接），避免重复调研。
 3. 用 `project_status()` 查看检索索引规模、KG 条数、worktree 列表与最近提交。
 4. 读 `docs/PROJECT_STATE.md` 与 `docs/TODO.md`（镜像；MCP state 为权威）。
 5. 若任务板有 in_progress/in_review 任务，先核对对应 worktree 与分支状态再行动。

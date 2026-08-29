@@ -66,6 +66,28 @@ tools/services.sh {start|stop|restart|status} [brain|embed|rerank|all]
 - 探活只认 HTTP 200（llama 模型加载期 /health 是 503）；按监听端口精准启停，
   不误杀无关进程
 
+## 索引分块语言
+
+cAST 结构感知分块：Java（专用精细路径）+ 通用 AST 分块覆盖 python / js / ts /
+tsx / go / rust / c / cpp（tree-sitter 官方 grammar，缺包自动跳过）+ Markdown
+按节分块 + 其余扩展名 hard_split。资料源 `lang: "auto"` 时按扩展名逐文件解析
+（harvest 源默认 auto）。
+
+## 资料收割管线（harvest → curator → 增量索引）
+
+1. researcher 调研中用 `harvest(url, name, kind)` 把反复参考的资料落盘
+   `tmp/harvest/<name>/`：`page`（HTML→Markdown，html2text）、`file`（原样）、
+   `repo`（GitHub codeload tarball / 任意 .tar.gz 安全解包、剥顶层 distdir、
+   防路径穿越、限额保护）。写 meta.json 供审查。**只落盘绝不触碰索引**——
+   不阻塞 MCP 调用；落盘即可 `get_source`/`sym_query(sources=['harvest'])` 阅读。
+2. 主 agent 把 harvest 清单派给 **curator** 角色（资料策展人）：抽样审查 →
+   剔除会污染检索的噪声子目录（vendor/tests/构建产物…，规则写
+   `tmp/harvest/exclude.json`，glob 数组、`load_sources` 动态合并、不入库、
+   即时生效）→ `refresh_index(source="harvest")` 增量索引 → 轮询
+   `tmp/index/refresh.log` → `search_code(sources=["harvest"])` 验证 →
+   `state_update(key="harvest_log")` 落账。
+3. curator 只动 tmp/harvest 与 exclude 规则，无 git 操作、不占主 agent 上下文。
+
 ## 可选：映射表查询
 
 把映射文件放到 `tmp/mappings/mappings.txt`（或设 `BRAIN_MAPPINGS_FILE`），
@@ -87,6 +109,7 @@ tools/services.sh {start|stop|restart|status} [brain|embed|rerank|all]
 | `get_source(file, start?, end?)` | 按相对路径读取原始文件（带行号） |
 | `sym_query(pattern, sources?, glob?)` | ripgrep 正则精确搜索：**已知确切类名/方法名/字符串时的快速定位** |
 | `web_fetch(url, timeout?, max_chars?, raw?)` | 抓网页（curl_cffi 浏览器 TLS 指纹）：HTML 自动转纯文本，raw=true 返回原始 HTML。能过 TLS 指纹层反爬（实测 zillow 等 urllib 403 页）；需执行 JS 的挑战页（如 g2.com）过不了，需真浏览器方案 |
+| `harvest(url, name, kind?, raw?, timeout?)` | 资料收割到 tmp/harvest/<name>/（page 网页转 Markdown / file 原样 / repo tar.gz 安全解包，支持 GitHub codeload）。只落盘不索引，落盘即可 get_source/sym_query 阅读；入 RAG 由 curator 角色裁决 |
 | `mappings_lookup(term)` | 映射表双向查询（可选功能） |
 | `refresh_index(source?)` | 后台重建/增量更新索引 |
 | `remember / recall / forget` | 语义记忆（自动嵌入、去重合并、时效衰减） |

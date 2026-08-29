@@ -32,6 +32,7 @@ sys.path.insert(0, str(TOOLS_DIR))
 import brain.search as S  # noqa: E402
 import brain.memory as M  # noqa: E402
 import brain.web as W  # noqa: E402
+import brain.harvest as HV  # noqa: E402
 from brain import db  # noqa: E402
 
 HOST = "127.0.0.1"
@@ -118,6 +119,19 @@ TOOLS: dict[str, dict] = {
         desc="抓取网页（curl_cffi 浏览器 TLS 指纹，可过 TLS 层反爬；需执行 JS 的挑战页过不了）。\n"
              "默认 HTML 转纯文本；返回 url(重定向后)/status/content_type/truncated；403/503 等反爬页原样返回内容以便判断封锁原因。\n"
              "与 WebSearch 配合：先搜索，再用本工具精读目标页正文。"),
+    "harvest": dict(
+        impl=HV.harvest,
+        params=[T("url", "string", True, "http(s) URL；repo 支持 GitHub codeload tarball 或任意 .tar.gz/.tgz"),
+                T("name", "string", True, "kebab-case 资料名（落盘目录 tmp/harvest/<name>/）"),
+                T("kind", "string", False, "auto|page(HTML→Markdown)|file(原样)|repo(tar.gz 安全解包剥顶层)；默认 auto"),
+                T("raw", "boolean", False, "page 类容许原始落盘的开关（true 时 HTML 不转 Markdown）"),
+                T("timeout", "integer", False, "超时秒数（默认 30）")],
+        desc="资料收割：把要反复参考的外部资料落盘到 tmp/harvest/<name>/（researcher 专用）。"
+             "page=网页转 Markdown；file=原样下载；repo=GitHub tarball/.tar.gz 解包（防路径穿越、"
+             "限额保护，自动剥离顶层 distdir）。只落盘、绝不触碰索引——落盘即可用 "
+             "get_source(file='tmp/harvest/...') 与 sym_query(sources=['harvest']) 阅读；"
+             "是否入 RAG 由 curator 角色审查后决策（refresh_index(source='harvest') 增量索引，"
+             "裁剪规则 tmp/harvest/exclude.json 即时生效）。"),
     "refresh_index": dict(
         impl=tool_refresh_index,
         params=[T("source", "string", False, "只刷新指定资料源；空则全部")],

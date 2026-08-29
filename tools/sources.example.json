@@ -2,36 +2,83 @@
   "legacy": {
     "root": "tmp/legacy",
     "lang": "java",
-    "include": ["**/*.java"],
+    "include": [
+      "**/*.java"
+    ],
     "exclude": [],
     "desc": "上游/老版本源码（考古对象，行为语义第一真相）——把老仓库克隆/解包到 tmp/ 下"
   },
   "platform-api": {
     "root": "tmp/refs/platform-api",
     "lang": "java",
-    "include": ["**/src/main/java/**/*.java"],
-    "exclude": ["**/src/test/**/*.java"],
+    "include": [
+      "**/src/main/java/**/*.java"
+    ],
+    "exclude": [
+      "**/src/test/**/*.java"
+    ],
     "desc": "目标平台/框架 API 源码（签名的最终真相）"
   },
   "platform-docs": {
     "root": "tmp/refs/platform-docs",
     "lang": "md",
-    "include": ["docs/*.md", "docs/**/*.md"],
-    "exclude": ["**/CHANGELOG*", "**/LICENSE*"],
+    "include": [
+      "docs/*.md",
+      "docs/**/*.md"
+    ],
+    "exclude": [
+      "**/CHANGELOG*",
+      "**/LICENSE*"
+    ],
     "desc": "目标平台官方文档"
   },
   "modern-reference": {
     "root": "tmp/refs/modern-reference/src/main/java",
     "lang": "java",
-    "include": ["**/*.java"],
+    "include": [
+      "**/*.java"
+    ],
     "exclude": [],
     "desc": "同类现代参考实现（已完成同类迁移的项目对同一概念的翻译）"
   },
   "project": {
     "root": ".",
     "lang": "md",
-    "include": ["docs/*.md", "docs/**/*.md", "AGENTS.md"],
+    "include": [
+      "docs/*.md",
+      "docs/**/*.md",
+      "AGENTS.md"
+    ],
     "exclude": [],
     "desc": "本项目自身的决策、状态与架构文档"
+  },
+  "harvest": {
+    "root": "tmp/harvest",
+    "lang": "auto",
+    "include": [
+      "**/*.java",
+      "**/*.md",
+      "**/*.py",
+      "**/*.js",
+      "**/*.mjs",
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.go",
+      "**/*.rs",
+      "**/*.c",
+      "**/*.h",
+      "**/*.cpp",
+      "**/*.cc",
+      "**/*.hpp",
+      "**/*.txt",
+      "**/*.json",
+      "**/*.yaml",
+      "**/*.yml",
+      "**/*.toml"
+    ],
+    "exclude": [
+      "**/meta.json"
+    ],
+    "desc": "researcher 收割的外部参考资料（harvest 工具写入；curator 审查后 refresh_index(source='harvest') 增量入 RAG）"
   }
 }

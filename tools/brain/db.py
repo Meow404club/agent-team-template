@@ -28,13 +28,13 @@ PROJECT_ROOT = TOOLS_DIR.parent
 DB_PATH = PROJECT_ROOT / "tmp" / "index" / "rag.db"
 SOURCES_PATH = TOOLS_DIR / "sources.json"
 
-os.environ.setdefault("BRAIN_DB", str(DB_PATH))
+os.environ.setdefault("GT6_RAG_DB", str(DB_PATH))
 
 RRF_K = 60
 
 
 def db_path() -> Path:
-    return Path(os.environ.get("BRAIN_DB", str(DB_PATH)))
+    return Path(os.environ.get("GT6_RAG_DB", str(DB_PATH)))
 
 
 def connect() -> sqlite3.Connection:
@@ -77,7 +77,21 @@ def _ensure_schema(con: sqlite3.Connection) -> None:
 
 def load_sources() -> dict:
     with open(SOURCES_PATH, encoding="utf-8") as f:
-        return json.load(f)
+        sources = json.load(f)
+    # curator 的运行时裁剪规则（tmp 区，不入库、改完即时生效，无需重启 brain）：
+    # tmp/harvest/exclude.json = ["<相对 tmp/harvest 的 glob>", ...]
+    extra = PROJECT_ROOT / "tmp" / "harvest" / "exclude.json"
+    if "harvest" in sources and extra.exists():
+        try:
+            with open(extra, encoding="utf-8") as f:
+                globs = json.load(f)
+            if isinstance(globs, list):
+                merged = list(sources["harvest"].get("exclude", []))
+                merged.extend(g for g in globs if isinstance(g, str))
+                sources["harvest"]["exclude"] = merged
+        except (OSError, json.JSONDecodeError):
+            pass  # 规则文件损坏时按无规则索引，curator 会发现并修复
+    return sources
 
 
 def _match_any(rel: str, patterns: list[str]) -> bool:
@@ -152,10 +166,10 @@ def index_source(con: sqlite3.Connection, source: str, cfg: dict,
                  limit_files: int | None = None, force: bool = False,
                  log=print) -> tuple[int, int]:
     """Index one source; returns (files_indexed, chunks_indexed)."""
-    from brain.chunking import chunk_file
+    from brain.chunking import chunk_file, resolve_lang
     from brain.embed import embed_texts
 
-    lang = cfg.get("lang", "text")
+    lang_cfg = cfg.get("lang", "text")
     done_files = done_chunks = 0
     batch: list[dict] = []
     batch_meta: dict = {}
@@ -204,6 +218,8 @@ def index_source(con: sqlite3.Connection, source: str, cfg: dict,
         if not force and row and abs(row[0] - st.st_mtime) < 1 and row[1] == st.st_size:
             skipped += 1
             continue
+        # lang=auto：逐文件按扩展名解析（harvest 等混合资料源）
+        lang = resolve_lang(rel, "text") if lang_cfg == "auto" else lang_cfg
         chunks = chunk_file(lang, text, rel)
         if not chunks:
             continue

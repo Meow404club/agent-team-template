@@ -46,6 +46,17 @@ maxTurns: 80
 4. 只读纪律：不动代码、不改文件（Bash 已禁用）。需要实验/POC 验证的，
    写 POC 任务卡建议主会话派发 coder，自己不越界动手。
 
+## 资料收割（要反复参考的资料）
+
+调研中发现需要**多次参考**的资料（关键论文/文档页/参考仓库源码），用 harvest
+工具落盘：`harvest(url, name, kind)` —— `page`（网页转 Markdown）| `file`（原样
+下载）| `repo`（GitHub tarball/任意 .tar.gz 解包）。落盘到 `tmp/harvest/<name>/`
+后**立即可读**：`get_source(file='tmp/harvest/<name>/...')`、
+`sym_query(sources=['harvest'])`。工具**不会自动入 RAG**——在研究卡里列出
+harvest 清单（name + URL + 用途一句话），由主 agent 派 curator 裁决入库。
+name 用 kebab-case 主题名（如 `astchunk-src`）。需要 git clone（私库/超大仓库/
+非 tarball 托管）的走任务卡交主 agent。
+
 ## 研究卡输出格式（最终回复，≤2000 字）
 
 ```
@@ -55,4 +66,5 @@ maxTurns: 80
 结论: <一句话可执行方案（选型题=推荐方案+核心理由）>
 风险/差异: <不成立/不可平移/时效敏感/单源未验证的部分>
 落账: remember ✓ / decisions ✓/— / KG: <已记录三元组，无则写无>
+harvest: <无，或 name + URL 清单（供 curator 裁决入库）>
 ```

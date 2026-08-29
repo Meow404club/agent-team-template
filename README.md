@@ -13,7 +13,9 @@
         ┌────────────┼───────────┼───────────┼──────────────┐
    architect    researcher   coder ×2~4   review-merge   debugger
    模块卡/ADR    调研/查证/选型  worktree实现  审查+合并main   根因+修复
-        └────────────┴───────────┴─────┬─────┴──────────────┘
+        └──────┬─────┴───────────┴─────┬─────┴──────────────┘
+               │ harvest 落盘资料        │
+          curator（资料策展人）：噪声剔除 → 裁决入库 → 增量索引 → 检索验证
                                        │
                     brain MCP（tools/brain/，SQLite）
         混合检索(向量+BM25+精排) · 语义记忆 · 知识图谱 · 状态账本
@@ -26,7 +28,7 @@
 | 层 | 载体 | 说明 |
 |---|---|---|
 | 记忆 | `tools/brain/`（MCP `brain`） | 语义记忆（自动嵌入、mem0 式去重合并）、KG 三元组、状态账本（任务板=唯一真相源） |
-| 协作 | `AGENTS.md` + `.zcode/agents|commands|skills` | 组织者宪法 + 五角色提示词 + 派发命令；worktree `../<仓库名>-trees/<slug>` + `work/<slug>` 分支 |
+| 协作 | `AGENTS.md` + `.zcode/agents|commands|skills` | 组织者宪法 + 六角色提示词 + 派发命令；worktree `../<仓库名>-trees/<slug>` + `work/<slug>` 分支 |
 | 约束 | `.githooks/` | GPG 双层强制（AI 发起时拦截 / git 层校验 / push 验签）+ 密钥与大文件拦截 |
 
 检索内核参考了业界实践：cAST 结构感知分块（arXiv:2506.15655）、Anthropic
@@ -100,8 +102,8 @@ tools/services.sh start          # 或 tools/services.sh start brain
 ```
 AGENTS.md            组织者宪法（主 Agent 专用，subagent 不加载）
 .zcode/config.json   MCP 服务器 brain 注册（type:http → 127.0.0.1:8939/mcp）
-.zcode/agents/       五角色 subagent 模板（系统提示词）
-.zcode/commands/     /architect /researcher /coder /review-merge /debugger
+.zcode/agents/       六角色 subagent 模板（系统提示词）
+.zcode/commands/     /architect /researcher /coder /review-merge /debugger /curator
 .zcode/skills/       context-loader · knowledge（记忆写入规范）
 .githooks/           GPG 双层强制钩子 + 注册说明
 tools/brain/         RAG 检索 + 记忆后端（常驻 HTTP MCP 守护，纯标准库协议壳）

@@ -1,6 +1,6 @@
 # 多 Agent 协作框架 · 组织者宪法（主 Agent 专用）
 
-> 本文件只被主会话入口加载。五个执行角色（architect/researcher/coder/review-merge/debugger）
+> 本文件只被主会话入口加载。六个执行角色（architect/researcher/coder/review-merge/debugger/curator）
 > 是 `.zcode/agents/` 下的 subagent 模板（`injectAgentsMd: false`），**不会**读到本文件——
 > 你（主 Agent）派发任务时必须把它们的系统提示词中需要的上下文写进任务卡。
 
@@ -26,6 +26,7 @@
 | `coder` | **可并行**：worktree 内实现任务 | 任务卡（slug、spec、证据、验收标准） | commit hash 列表 + 变更摘要 + 自测结果 |
 | `review-merge` | 审查分支、解决冲突、合入 main | 分支名 + 审查重点 | verdict + 合并 commit hash |
 | `debugger` | 构建/崩溃/运行时排障 | 错误现场 + 复现方式 | 根因 + 修复 + 验证输出 |
+| `curator` | harvest 资料审查：噪声子目录剔除、入 RAG 裁决、增量索引+检索验证 | harvest 清单（name+URL）+ 调研背景 | 每资料裁决 + exclude 规则 + state(harvest_log) 落账 |
 
 ## 三、并行 PR 工作流（像开源项目一样跑）
 
@@ -55,6 +56,12 @@
   审查异常复杂才拆独立会话。
 - coder 死循环/超时 → 废弃分支（`git worktree remove` + 删分支 + status=aborted）
   重新拆卡，不救活烂摊子。
+
+**研究资料管线**：researcher 用 `harvest` 工具把反复参考的外部资料落盘
+`tmp/harvest/<name>/`（page=HTML→Markdown，repo=tarball 解包；落盘即可读，
+不自动入 RAG，不阻塞调用）→ 主 agent 把清单随派发交 `curator` 审查（噪声
+子目录剔除 + 入库裁决 + 增量索引 + 检索验证；curator 只动 tmp/harvest 与其
+exclude 规则，无需 git 流程）→ 主 agent 把裁决回链研究卡/任务板。
 
 ## 四、任务卡规范（派给 coder 的 prompt 必含）
 
@@ -102,12 +109,13 @@ BRANCH: work/<slug>（worktree ../<仓库名>-trees/<slug> 由 coder 自建）
 ```
 tmp/legacy/           上游/老版本源码（考古对象，可按项目改名/增删）
 tmp/refs/             平台 API、官方文档、同类现代参考实现
+tmp/harvest/          researcher 收割区（curator 裁决入库，exclude.json=裁剪规则）
 tmp/mappings/         可选：名称映射表（mappings_lookup 用）
 tmp/index/            RAG 索引与日志（gitignore）
 tools/brain/          检索与记忆工具链（brain MCP = 常驻 HTTP 服务 :8939/mcp）
 tools/services.sh     服务总线：start|stop|restart|status × brain|embed|rerank
-.zcode/agents/        五角色 subagent 模板
-.zcode/commands/      各角色派发快捷命令（/architect /coder ...）
+.zcode/agents/        六角色 subagent 模板
+.zcode/commands/      各角色派发快捷命令（/architect /coder /curator ...）
 .zcode/skills/        context-loader（会话装载）/ knowledge（写入规范）
 .githooks/            commit 校验链（GPG 双层强制）+ 注册说明
 docs/                 状态镜像 / 架构文档 / 调研笔记

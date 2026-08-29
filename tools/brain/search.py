@@ -305,16 +305,35 @@ def mappings_lookup(term: str) -> dict:
 
 # ------------------------------------------------------------------- state --
 
-def state_read(key: str | None = None) -> dict:
+def state_read(key: str | None = None, limit: int = 10) -> dict:
+    """读取项目状态记忆。列表与记录型字典倒序返回（最新在前），超过 limit 条
+    只取最近 limit 条；progress/architecture 等结构型原样。无 key 时按最近更新
+    排序各 key 并应用同样的截断——大账本不灌上下文，读全量请指定 key。"""
     con = db.connect()
+
+    def shrink(v):
+        if isinstance(v, list):
+            out = list(reversed(v))  # append 型列表：尾部是最新
+            return out[:limit] if len(out) > limit else out
+        # 大账本才截（decisions/tasks/todo 等追加型 dict/list）：
+        # progress/architecture 等小结构型不受影响，也不依赖条目形态猜测
+        if isinstance(v, dict) and len(v) > limit:
+            return dict(list(v.items())[-limit:][::-1])
+        return v
+
     if key:
         row = con.execute("SELECT value FROM state_kv WHERE key=?", (key,)).fetchone()
         con.close()
-        return {key: json.loads(row[0])} if row else {key: None}
-    out = {}
-    for k, v, u in con.execute("SELECT key, value, updated FROM state_kv"):
+        if not row:
+            return {key: None}
         try:
-            out[k] = {"value": json.loads(v), "updated": u}
+            return {key: shrink(json.loads(row[0]))}
+        except json.JSONDecodeError:
+            return {key: row[0]}
+    out = {}
+    for k, v, u in con.execute("SELECT key, value, updated FROM state_kv ORDER BY updated DESC"):
+        try:
+            out[k] = {"value": shrink(json.loads(v)), "updated": u}
         except json.JSONDecodeError:
             out[k] = {"value": v, "updated": u}
     con.close()

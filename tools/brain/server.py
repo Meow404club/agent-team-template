@@ -179,8 +179,10 @@ TOOLS: dict[str, dict] = {
         desc="从知识图谱删除一个实体及其所有关系。"),
     "state_read": dict(
         impl=S.state_read,
-        params=[T("key", "string", False, "限定 key；空则返回全部")],
-        desc="读取项目状态记忆。key 可选: decisions, todo, known_bugs, progress, architecture；为空返回全部。"),
+        params=[T("key", "string", False, "限定 key；空则返回全部（每 key 最近 10 条，最新在前）"),
+                T("limit", "integer", False, "无 key 概览/列表倒序时的截断条数（默认 10）；读全量请指定 key 并加大 limit")],
+        desc="读取项目状态记忆。key 可选: decisions, todo, known_bugs, progress, architecture, tasks, harvest_log；为空返回全部"
+             "——但按最近更新排序、列表/记录型只取最近 10 条（最新在前），读全量请指定 key（必要时 limit 调大）。"),
     "state_update": dict(
         impl=S.state_update,
         params=[T("key", "string", True, "状态键"),

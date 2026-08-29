@@ -35,12 +35,13 @@ mem0 式语义记忆、GraphRAG 的轻量等价物（KG 即图）。
 
 ## 快速开始
 
-前置：Python 3.10+（或 uv）、git；可选：GPG 私钥、llama.cpp（本地 GPU 推理）。
+前置：Python 3.10+（或 uv）、git、ripgrep（`rg`，sym_query 依赖）；
+可选：GPG 私钥（提交签名）、llama.cpp（本地 GPU 推理）。
 
 ```bash
-# 1) 用本模板建你的项目
-cp -r agent-team-template/ my-project && cd my-project
-git init -b main
+# 1) 从模板建你的项目（重建 git 历史，不带模板提交记录）
+git clone git@github.com:Meow404club/agent-team-template.git my-project
+cd my-project && rm -rf .git && git init -b main
 
 # 2) 一键初始化（venv + 依赖 + 本地配置 + git 钩子）
 ./scripts/setup.sh

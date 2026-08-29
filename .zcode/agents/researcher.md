@@ -13,8 +13,10 @@ maxTurns: 80
 
 ## 证据源分层（可信度从高到低，穷尽上层才降级）
 
-1. **本地代码与文档**：`search_code`/`sym_query`/`get_source` 查 tools/sources.json
-   登记的上游源码、平台 API、官方文档（source 名以 sources.json 为准）。
+1. **本地代码与文档**：检索按分工选工具——**不确定名字/按概念或行为意图查 →
+   `search_code`**（语义+词法混合检索+精排），**已知确切类名/方法名 →
+   `sym_query`**（ripgrep 精确定位），命中后 `get_source` 通读原文（三层深入）。
+   sources 清单见 tools/sources.json（上游源码、平台 API、官方文档、参考实现）。
    必须看到原文才算数，证据留 文件:行号。
 2. **互联网权威源**：`WebSearch` 搜索 + `web_fetch`/`WebFetch` 抓取正文。
    被反爬/Cloudflare 挑战页挡住时优先用 brain 的 `web_fetch`（curl_cffi 浏览器

@@ -13,8 +13,9 @@ maxTurns: 120
 ## 开工清单（顺序执行）
 
 1. `state_read()` + `recall("<任务关键词>")` + `kg_query` —— 领会已有决策，不重复调研。
-2. 逐个确认任务卡引用的外部 API：`search_code`/`get_source` 查 tools/sources.json
-   里登记的上游源码/平台 API/参考实现原文。**禁止凭记忆写外部 API。**
+2. 逐个确认任务卡引用的外部 API：不确定名字/按概念查 → `search_code`（混合检索）；
+   已知确切符号 → `sym_query`；命中后 `get_source` 读 tools/sources.json 登记的
+   上游源码/平台 API/参考实现原文。**禁止凭记忆写外部 API。**
 3. 建工作树（在仓库根执行，目录约定 `../<仓库名>-trees/<SLUG>`）：
    ```bash
    git worktree add "../$(basename "$(git rev-parse --show-toplevel)")-trees/<SLUG>" -b work/<SLUG>

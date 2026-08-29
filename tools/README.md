@@ -83,9 +83,9 @@ tools/services.sh {start|stop|restart|status} [brain|embed|rerank|all]
 
 | 工具 | 用途 |
 |---|---|
-| `search_code(query, sources?, limit?, path_glob?)` | 语义+词法混合检索（自动精排） |
+| `search_code(query, sources?, limit?, path_glob?)` | 语义+词法混合检索（自动精排）。**不确定确切类名/方法名、按概念或行为意图查代码时用它**；已知确切符号名用 sym_query 更快 |
 | `get_source(file, start?, end?)` | 按相对路径读取原始文件（带行号） |
-| `sym_query(pattern, sources?, glob?)` | ripgrep 正则精确搜索 |
+| `sym_query(pattern, sources?, glob?)` | ripgrep 正则精确搜索：**已知确切类名/方法名/字符串时的快速定位** |
 | `web_fetch(url, timeout?, max_chars?, raw?)` | 抓网页（curl_cffi 浏览器 TLS 指纹）：HTML 自动转纯文本，raw=true 返回原始 HTML。能过 TLS 指纹层反爬（实测 zillow 等 urllib 403 页）；需执行 JS 的挑战页（如 g2.com）过不了，需真浏览器方案 |
 | `mappings_lookup(term)` | 映射表双向查询（可选功能） |
 | `refresh_index(source?)` | 后台重建/增量更新索引 |

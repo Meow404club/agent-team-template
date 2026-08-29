@@ -1,8 +1,15 @@
-"""CLI indexer: python -m brain.index [source ...|all] [--force] [--limit-files N]"""
+"""Indexer CLI: tools/.venv/bin/python tools/brain/index.py [source ...|all] [--force] [--limit-files N]
+
+Self-bootstraps sys.path, so it runs from any cwd (repo root, tools/, elsewhere).
+"""
 from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
+
+TOOLS_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(TOOLS_DIR))
 
 
 def main() -> None:

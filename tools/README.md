@@ -25,10 +25,10 @@
 
 ```bash
 VENV=tools/.venv/bin/python
-$VENV -m brain.index status              # 查看各资料源索引状态
-$VENV -m brain.index all                 # 全量/增量索引所有源
-$VENV -m brain.index legacy platform-api # 只索引指定源
-$VENV -m brain.index --limit-files 5 all # 小规模试跑
+$VENV tools/brain/index.py all                 # 全量/增量索引所有源（任意 cwd 可跑）
+$VENV tools/brain/index.py legacy platform-api # 只索引指定源（名字=sources.json 的 key）
+$VENV tools/brain/index.py --limit-files 5 all # 小规模试跑
+# 索引规模总览用 MCP 工具 project_status()，或看 tmp/index/ 下的日志
 ```
 
 ## 可选：本地推理服务（ZCode 会话前先拉起）

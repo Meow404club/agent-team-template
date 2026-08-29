@@ -46,7 +46,7 @@ git init -b main
 ./scripts/setup.sh
 
 # 3) 定制（详见下方"必改清单"），然后建索引
-tools/.venv/bin/python -m brain.index all
+tools/.venv/bin/python tools/brain/index.py all
 
 # 4) 用 ZCode 打开 my-project —— 确认 MCP 面板里 brain 已连接
 #    第一句话就说：恢复上下文，开始 <你的目标>

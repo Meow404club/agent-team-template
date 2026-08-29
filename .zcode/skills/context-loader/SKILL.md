@@ -29,7 +29,7 @@ description: "项目会话上下文装载器。每次会话开始、或任何 Ag
 
 若 `project_status()` 显示索引为空：
 1. 提示用户索引尚未建立。
-2. 后台执行 `tools/.venv/bin/python -m brain.index all`（日志 `tmp/index/full-index.log`）。
+2. 后台执行 `tools/.venv/bin/python tools/brain/index.py all`（日志 `tmp/index/full-index.log`）。
 3. 完成前不要进行需要检索的工作；完成后 `state_update(key="progress", ...)` 记录。
 
 ## 铁律提醒（装载后必须遵守）

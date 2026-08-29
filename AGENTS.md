@@ -14,7 +14,7 @@
 1. `state_read()` 恢复状态；`project_status()` 看索引/worktree/提交概况。
 2. `recall()`（语义记忆）查与本次目标相关的历史结论，避免重复考古。
 3. 读 `docs/PROJECT_STATE.md` 与 `docs/TODO.md` 镜像。
-4. 索引为空则先在 `tools/` 后台跑 `.venv/bin/python -m brain.index all`。
+4. 索引为空则先在仓库根后台跑 `tools/.venv/bin/python tools/brain/index.py all`。
 
 ## 二、可用执行者（Agent 工具的 subagent_type）
 

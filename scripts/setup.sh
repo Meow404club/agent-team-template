@@ -43,7 +43,7 @@ cat <<'NEXT'
 完成。接下来三处必改（详见 README「必改清单」）：
   1. tools/config.json     —— 嵌入 API（本地 llama-server 或远端中转）+ query_instruction
   2. tools/sources.json    —— 资料源注册表；改完跑:
-       tools/.venv/bin/python -m brain.index all
+       tools/.venv/bin/python tools/brain/index.py all
   3. AGENTS.md + .zcode/agents/*.md —— 占位符换成你的 sources key 与领域红线
 
 可选：本地 GPU 推理 tools/embed_server.sh + tools/rerank_server.sh（见 tools/README.md）

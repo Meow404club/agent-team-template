@@ -3,7 +3,8 @@ description: 派发研究员子代理（researcher）：代码考古 / 联网调
 ---
 用 Agent 工具派发 `subagent_type: researcher`。
 
-任务输入：$ARGUMENTS（研究问题要具体、单一；联网调研类无需额外授权，子代理自带 WebSearch/WebFetch）
+任务输入：$ARGUMENTS（研究问题要具体、单一；联网能力无需额外授权——子代理有
+WebSearch/WebFetch，且 brain MCP 的 `web_fetch` 工具可过反爬抓正文）
 
 派发 prompt 必须自包含，至少包含：
 1. 研究问题（一句可判完成的话）+ 建议调研模式（A 代码考古 / B 外部调研 /

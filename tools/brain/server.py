@@ -14,6 +14,7 @@ from mcp.server.fastmcp import FastMCP  # noqa: E402
 
 import brain.search as S  # noqa: E402
 import brain.memory as M  # noqa: E402
+import brain.web as W  # noqa: E402
 from brain import db  # noqa: E402
 
 mcp = FastMCP(
@@ -71,6 +72,19 @@ def mappings_lookup(term: str) -> str:
         return _j(S.mappings_lookup(term))
     except Exception as e:
         return _j({"error": str(e)})
+
+
+@mcp.tool()
+def web_fetch(url: str, timeout: int = 20, max_chars: int = 30000,
+              raw: bool = False) -> str:
+    """抓取网页（curl_cffi 浏览器 TLS 指纹，可过多数反爬/Cloudflare 挑战页）。
+    默认把 HTML 转纯文本返回（raw=true 返回原始 HTML）；返回 url(重定向后)/status/
+    content_type/truncated。403/503 等反爬页会原样返回内容以便判断封锁原因。
+    与 WebSearch 配合：先搜索，再用本工具精读目标页正文。"""
+    try:
+        return _j(W.web_fetch(url, timeout, max_chars, raw))
+    except Exception as e:
+        return _j({"error": str(e), "url": url})
 
 
 @mcp.tool()

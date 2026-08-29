@@ -88,7 +88,8 @@ BRANCH: work/<slug>（worktree ../<仓库名>-trees/<slug> 由 coder 自建）
 - 写：`remember(kind, text)`（语义记忆，自动嵌入）、`state_update`（账本）、
   `kg_add`（结构关系，同时入语义索引）、`state_update(key="tasks")`（任务板）。
 - 读：`recall(query)`（语义检索历史结论）、`state_read`、`kg_query`、`search_code`、
-  `sym_query`、`get_source`、`mappings_lookup`、`refresh_index`、`project_status`。
+  `sym_query`、`get_source`、`mappings_lookup`、`web_fetch`（浏览器指纹抓网页）、
+  `refresh_index`、`project_status`。
 - 每次合并/决策/发现 bug 后必须写记忆；`docs/PROJECT_STATE.md` 同步镜像。
 
 ## 八、目录地图

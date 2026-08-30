@@ -356,6 +356,14 @@ def _deep_merge(old, new):
 
 def state_update(key: str, value, merge: bool = False) -> dict:
     import time as _t
+    # agent 经 MCP 传参时偶发把结构序列化成 JSON 字符串——先解回结构体，
+    # 否则 json.dumps 双重编码、读回是 str 且 merge 的类型判断失效。
+    # 解析失败（纯文本 todo/note 等）按原样存。
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except (json.JSONDecodeError, ValueError):
+            pass
     con = db.connect()
     if merge:
         row = con.execute("SELECT value FROM state_kv WHERE key=?", (key,)).fetchone()

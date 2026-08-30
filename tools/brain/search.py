@@ -340,6 +340,20 @@ def state_read(key: str | None = None, limit: int = 10) -> dict:
     return out
 
 
+def _deep_merge(old, new):
+    """深合并：dict+dict 递归（子典可只传变更字段，不清空既有卡片）；
+    list+list 追加去重（commits 等增量登记幂等）；其余/类型不匹配新值整体覆盖。
+    需要缩短/清空列表或整体替换时用 merge=false 覆盖式写。"""
+    if isinstance(old, dict) and isinstance(new, dict):
+        out = dict(old)
+        for k, v in new.items():
+            out[k] = _deep_merge(out[k], v) if k in out else v
+        return out
+    if isinstance(old, list) and isinstance(new, list):
+        return old + [v for v in new if v not in old]
+    return new
+
+
 def state_update(key: str, value, merge: bool = False) -> dict:
     import time as _t
     con = db.connect()
@@ -350,11 +364,8 @@ def state_update(key: str, value, merge: bool = False) -> dict:
                 old = json.loads(row[0])
             except json.JSONDecodeError:
                 old = None
-            if isinstance(old, list) and isinstance(value, list):
-                value = old + [v for v in value if v not in old]
-            elif isinstance(old, dict) and isinstance(value, dict):
-                old.update(value)
-                value = old
+            if old is not None:
+                value = _deep_merge(old, value)
     con.execute(
         "INSERT OR REPLACE INTO state_kv(key, value, updated) VALUES(?,?,?)",
         (key, json.dumps(value, ensure_ascii=False), _t.time()),

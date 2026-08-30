@@ -188,9 +188,11 @@ TOOLS: dict[str, dict] = {
         impl=S.state_update,
         params=[T("key", "string", True, "状态键"),
                 T("value", "any", True, "JSON 兼容结构"),
-                T("merge", "boolean", False, "列表追加/字典合并而非覆盖")],
-        desc="写入项目状态记忆。key 建议: decisions(决策+理由), todo, known_bugs, progress, architecture。\n"
-             "merge=true 时列表追加/字典合并而非覆盖。value 必须是 JSON 兼容结构。"),
+                T("merge", "boolean", False, "true=深合并（dict 递归更新子典/list 追加去重），false=整体覆盖")],
+        desc="写入项目状态记忆。key 建议: decisions(决策+理由), todo, known_bugs, progress, architecture, tasks。\n"
+             "merge=true 深合并：dict+dict 递归更新子典（可只传变更字段，不清空任务卡等既有结构）、"
+             "list+list 追加去重、其余/类型不匹配新值覆盖；整体替换/缩短列表用 merge=false。\n"
+             "value 必须是 JSON 兼容结构。"),
     "project_status": dict(
         impl=S.project_status,
         params=[],

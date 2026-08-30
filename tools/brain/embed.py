@@ -32,7 +32,7 @@ _opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 def load_config() -> dict:
     global _config
     if _config is None:
-        cfg_path = Path(os.environ.get("BRAIN_CONFIG", CONFIG_PATH))
+        cfg_path = Path(os.environ.get("BRAIN_RAG_CONFIG", CONFIG_PATH))
         with open(cfg_path, encoding="utf-8") as f:
             _config = json.load(f)["embedding"]
     return _config

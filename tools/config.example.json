@@ -13,5 +13,13 @@
     "batch_timeout_s": 240,
     "truncate_dims": 0,
     "query_instruction": "Instruct: Given a search query about <你的项目领域：语言/框架/主题>, retrieve relevant source code or documentation passages that answer the query\nQuery: "
+  },
+  "autorefresh": {
+    "_note": "brain 守护内置的周期性增量索引：mtime 增量（无改动零嵌入），独立子进程执行。缺省即按下值启用",
+    "enabled": true,
+    "interval_s": 600,
+    "sources": ["project"],
+    "startup_delay_s": 30,
+    "run_timeout_s": 1800
   }
 }

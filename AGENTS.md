@@ -49,6 +49,9 @@
 
 并行规则：
 - **文件域隔离优先**：派发前给每个任务声明 `files_scope`，重叠域的任务串行或明确合并顺序。
+- **后台派发优先**：Agent 派发一律 `run_in_background: true`（并行 coder 必然后台；单个
+  architect/researcher/curator/debugger 同样后台跑），派发后立即回应用户、完成通知到达
+  再收结果——长任务不阻塞主会话，保住交互响应性。
 - **并行度 2~4**：超过 4 个并发 coder 时冲突与审查积压风险大于收益。
 - **合并串行**：任何时刻只允许一个 review-merge 在动 main。
 - **批量合并会话**：并行完成的多个分支尽量交给**同一个** review-merge 会话顺序

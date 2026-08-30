@@ -73,6 +73,15 @@ tsx / go / rust / c / cpp（tree-sitter 官方 grammar，缺包自动跳过）+ 
 按节分块 + 其余扩展名 hard_split。资料源 `lang: "auto"` 时按扩展名逐文件解析
 （harvest 源默认 auto）。
 
+## 周期性增量索引（autorefresh）
+
+brain 守护内置调度线程：启动 30s 后首轮、之后每轮间隔 600s，对配置的源
+（默认 `project`，即本项目 docs/AGENTS.md 等自身文档）起独立索引子进程——
+mtime 增量，无改动零嵌入，真有变更时单轮秒级。开关与节奏在
+`tools/config.json` 的 `"autorefresh"` 块（`enabled/interval_s/sources/
+startup_delay_s/run_timeout_s`），生命周期日志 `tmp/index/autorefresh.log`，
+索引输出与手动 refresh 共用 `tmp/index/refresh.log`。
+
 ## 资料收割管线（harvest → curator → 增量索引）
 
 1. researcher 调研中用 `harvest(url, name, kind)` 把反复参考的资料落盘

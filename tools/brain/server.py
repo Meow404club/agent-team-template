@@ -33,11 +33,12 @@ import brain.search as S  # noqa: E402
 import brain.memory as M  # noqa: E402
 import brain.web as W  # noqa: E402
 import brain.harvest as HV  # noqa: E402
+import brain.autorefresh as AR  # noqa: E402
 from brain import db  # noqa: E402
 
 HOST = "127.0.0.1"
 PORT = int(os.environ.get("BRAIN_PORT", "8939"))
-SERVER_INFO = {"name": "brain", "version": "2.2-http"}
+SERVER_INFO = {"name": "brain", "version": "2.3-http"}
 # 随 initialize 下发、注入所有 agent 的全局引导
 INSTRUCTIONS = (
     "本项目的记忆与检索中枢。动手前先检索，按需选工具："
@@ -356,6 +357,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    if AR.start() is not None:
+        print("autorefresh: periodic incremental indexing thread started", file=sys.stderr, flush=True)
     print(f"brain http server listening on http://{HOST}:{PORT}/mcp "
           f"({len(TOOLS)} tools)", file=sys.stderr, flush=True)
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()

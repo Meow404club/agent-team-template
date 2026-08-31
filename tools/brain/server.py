@@ -177,7 +177,15 @@ TOOLS: dict[str, dict] = {
     "kg_del": dict(
         impl=S.kg_del,
         params=[T("entity", "string", True, "实体名")],
-        desc="从知识图谱删除一个实体及其所有关系。"),
+        desc="从知识图谱物理删除一个实体及其所有关系。⚠️ 关系过时请用 kg_invalidate（保留演化链），本工具只用于清理错误/烟雾数据。"),
+    "kg_invalidate": dict(
+        impl=S.kg_invalidate,
+        params=[T("src", "string", True, "源实体"),
+                T("rel", "string", True, "关系"),
+                T("dst", "string", True, "目标实体"),
+                T("reason", "string", False, "失效原因（记入审计）")],
+        desc="关系过时的正规入口（双时态）：置 invalid_at 保留历史，不物理删除。"
+             "新事实取代旧关系时：先 kg_invalidate 旧边，再 kg_add 新边。"),
     "state_read": dict(
         impl=S.state_read,
         params=[T("key", "string", False, "限定 key；空则返回全部（每 key 最近 10 条，最新在前）"),
@@ -186,13 +194,22 @@ TOOLS: dict[str, dict] = {
              "——但按最近更新排序、列表/记录型只取最近 10 条（最新在前），读全量请指定 key（必要时 limit 调大）。"),
     "state_update": dict(
         impl=S.state_update,
-        params=[T("key", "string", True, "状态键"),
+        params=[T("key", "string", True, "状态键（点分 namespace，如 tasks.xxx / tmp.xxx）"),
                 T("value", "any", True, "JSON 兼容结构"),
-                T("merge", "boolean", False, "true=深合并（dict 递归更新子典/list 追加去重），false=整体覆盖")],
+                T("merge", "boolean", False, "true=深合并（dict 递归更新子典/list 追加去重），false=整体覆盖"),
+                T("ttl_seconds", "number", False, "可选：N 秒后过期（惰性清扫）。临时键用 tmp.* 前缀+TTL")],
         desc="写入项目状态记忆。key 建议: decisions(决策+理由), todo, known_bugs, progress, architecture, tasks。\n"
              "merge=true 深合并：dict+dict 递归更新子典（可只传变更字段，不清空任务卡等既有结构）、"
              "list+list 追加去重、其余/类型不匹配新值覆盖；整体替换/缩短列表用 merge=false。\n"
              "value 必须是 JSON 兼容结构。"),
+    "state_search": dict(
+        impl=S.state_search,
+        params=[T("query", "string", True, "语义查询（自然语言）"),
+                T("k", "integer", False, "返回条数"),
+                T("prefix", "string", False, "namespace 前缀过滤（如 'tasks.' / 'tmp.'）"),
+                T("offset", "integer", False, "分页偏移")],
+        desc="语义检索 state 账本（值嵌入缓存，写入时更新）：top-k 返回 key+预览+分数，命中后 state_read(key) 读全量。"
+             "prefix 按 namespace 过滤；与 LangGraph BaseStore search 同构。"),
     "project_status": dict(
         impl=S.project_status,
         params=[],

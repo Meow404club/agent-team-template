@@ -306,10 +306,35 @@ def mappings_lookup(term: str) -> dict:
 # ------------------------------------------------------------------- state --
 
 def state_read(key: str | None = None, limit: int = 10) -> dict:
-    """读取项目状态记忆。列表与记录型字典倒序返回（最新在前），超过 limit 条
-    只取最近 limit 条；progress/architecture 等结构型原样。无 key 时按最近更新
-    排序各 key 并应用同样的截断——大账本不灌上下文，读全量请指定 key。"""
+    """MemGPT 式分层读。无 key = 目录页：只返回各 key 的元信息（类型/条数/更新时间，
+    按最近更新倒序），不返回内容——先浏览目录，再用 state_search 语义定位或按 key 取内容。
+    带 key = 内容页：列表与记录型字典倒序（最新在前），超过 limit 只取最近；
+    progress/architecture 等小结构型原样。读全量加大 limit。"""
     con = db.connect()
+    import time as _t
+    con.execute("DELETE FROM state_kv WHERE expires_at IS NOT NULL AND expires_at < ?",
+                (_t.time(),))  # TTL 惰性清扫（LangGraph store 同款机会式）
+    con.commit()
+    if not key:
+        out = {}
+        for k, v, u in con.execute("SELECT key, value, updated FROM state_kv ORDER BY updated DESC"):
+            try:
+                data = json.loads(v)
+            except json.JSONDecodeError:
+                data = v
+            if isinstance(data, dict):
+                shape = f"dict/{len(data)}"
+            elif isinstance(data, list):
+                shape = f"list/{len(data)}"
+            elif isinstance(data, str):
+                shape = f"str/{len(data)}字"
+            else:
+                shape = type(data).__name__
+            out[k] = {"updated": u, "shape": shape}
+        con.close()
+        return {"_usage": "目录页不含内容：state_read(key) 读单键（超长截断，limit 调大读全量）；"
+                          "state_search(query) 语义定位；写入用 state_update",
+                "keys": out}
 
     def shrink(v):
         if isinstance(v, list):
@@ -321,25 +346,14 @@ def state_read(key: str | None = None, limit: int = 10) -> dict:
             return dict(list(v.items())[-limit:][::-1])
         return v
 
-    if key:
-        row = con.execute("SELECT value FROM state_kv WHERE key=?", (key,)).fetchone()
-        con.close()
-        if not row:
-            return {key: None}
-        try:
-            return {key: shrink(json.loads(row[0]))}
-        except json.JSONDecodeError:
-            return {key: row[0]}
-    out = {}
-    for k, v, u in con.execute("SELECT key, value, updated FROM state_kv ORDER BY updated DESC"):
-        try:
-            out[k] = {"value": shrink(json.loads(v)), "updated": u}
-        except json.JSONDecodeError:
-            out[k] = {"value": v, "updated": u}
+    row = con.execute("SELECT value FROM state_kv WHERE key=?", (key,)).fetchone()
     con.close()
-    return out
-
-
+    if not row:
+        return {key: None}
+    try:
+        return {key: shrink(json.loads(row[0]))}
+    except json.JSONDecodeError:
+        return {key: row[0]}
 def _deep_merge(old, new):
     """深合并：dict+dict 递归（子典可只传变更字段，不清空既有卡片）；
     list+list 追加去重（commits 等增量登记幂等）；其余/类型不匹配新值整体覆盖。
@@ -354,7 +368,7 @@ def _deep_merge(old, new):
     return new
 
 
-def state_update(key: str, value, merge: bool = False) -> dict:
+def state_update(key: str, value, merge: bool = False, ttl_seconds: float | None = None) -> dict:
     import time as _t
     # agent 经 MCP 传参时偶发把结构序列化成 JSON 字符串——先解回结构体，
     # 否则 json.dumps 双重编码、读回是 str 且 merge 的类型判断失效。
@@ -374,40 +388,69 @@ def state_update(key: str, value, merge: bool = False) -> dict:
                 old = None
             if old is not None:
                 value = _deep_merge(old, value)
+    expires = (_t.time() + ttl_seconds) if ttl_seconds else None
     con.execute(
-        "INSERT OR REPLACE INTO state_kv(key, value, updated) VALUES(?,?,?)",
-        (key, json.dumps(value, ensure_ascii=False), _t.time()),
+        "INSERT OR REPLACE INTO state_kv(key, value, updated, expires_at) VALUES(?,?,?,?)",
+        (key, json.dumps(value, ensure_ascii=False), _t.time(), expires),
     )
     con.commit()
     con.close()
+    try:  # 向量缓存尽力更新（失败不影响写入主路径）
+        import sqlite3 as _s
+        con2 = db.connect()
+        _state_vec_sync(con2, key, json.dumps(value, ensure_ascii=False), _t.time())
+        con2.close()
+    except Exception:
+        pass
     return {"ok": True, "key": key, "value": value}
 
 
 # ---------------------------------------------------------------------- KG --
-
 def kg_add(src: str, rel: str, dst: str, note: str = "",
            node_types: dict | None = None) -> dict:
+    """写入一条关系。闸门：重复边忽略（幂等）；不允许既有的孤立节点当端点
+    （防无意义悬挂节点增殖——先删孤立节点或换名字）；新节点允许（首条边会挂住它）。"""
     import time as _t
+    src, rel, dst = src.strip(), rel.strip(), dst.strip()
+    if not src or not rel or not dst:
+        return {"ok": False, "error": "src/rel/dst 均不能为空"}
     con = db.connect()
     now = _t.time()
-    nt = node_types or {}
-    for name in (src, dst):
+    try:
+        # 孤儿拦截：节点存在但既无边也不是本次要建的端点
+        for name in (src, dst):
+            has_edge = con.execute(
+                "SELECT 1 FROM kg_edges WHERE src=? OR dst=? LIMIT 1", (name, name)
+            ).fetchone()
+            exists = con.execute(
+                "SELECT 1 FROM kg_nodes WHERE name=?", (name,)).fetchone()
+            if exists and not has_edge:
+                return {"ok": False,
+                        "error": f"'{name}' 是已存在的孤立节点（无边）。先用 kg_del 删掉它，"
+                                 f"或确认命名是否与既有节点重复（孤儿通常就是重复命名导致的）。"}
+        dup = con.execute(
+            "SELECT 1 FROM kg_edges WHERE src=? AND rel=? AND dst=?", (src, rel, dst)
+        ).fetchone()
+        if dup:
+            return {"ok": True, "dedup": True, "edge": f"{src} -[{rel}]-> {dst}",
+                    "note": "重复边已忽略（幂等）"}
+        nt = node_types or {}
+        for name in (src, dst):
+            con.execute(
+                "INSERT OR IGNORE INTO kg_nodes(name, type, note, created) VALUES(?,?,?,?)",
+                (name, nt.get(name, "Entity"), "", now),
+            )
+        for name in (src, dst):
+            if name in nt:
+                con.execute("UPDATE kg_nodes SET type=? WHERE name=?", (nt[name], name))
         con.execute(
-            "INSERT OR IGNORE INTO kg_nodes(name, type, note, created) VALUES(?,?,?,?)",
-            (name, nt.get(name, "Entity"), "", now),
+            "INSERT INTO kg_edges(src, rel, dst, note, created, valid_at) VALUES(?,?,?,?,?,?)",
+            (src, rel, dst, note, now, now),
         )
-    for name in (src, dst):
-        if name in nt:
-            con.execute("UPDATE kg_nodes SET type=? WHERE name=?", (nt[name], name))
-    con.execute(
-        "INSERT OR IGNORE INTO kg_edges(src, rel, dst, note, created) VALUES(?,?,?,?,?)",
-        (src, rel, dst, note, now),
-    )
-    con.commit()
-    con.close()
+        con.commit()
+    finally:
+        con.close()
     return {"ok": True, "edge": f"{src} -[{rel}]-> {dst}"}
-
-
 def kg_query(entity: str | None = None, rel: str | None = None, limit: int = 30) -> dict:
     con = db.connect()
     q = "SELECT src, rel, dst, note FROM kg_edges WHERE 1=1"
@@ -429,13 +472,121 @@ def kg_query(entity: str | None = None, rel: str | None = None, limit: int = 30)
 
 def kg_del(entity: str) -> dict:
     con = db.connect()
-    con.execute("DELETE FROM kg_edges WHERE src=? OR dst=?", (entity, entity))
-    con.execute("DELETE FROM kg_nodes WHERE name=?", (entity,))
-    con.commit()
-    con.close()
+    try:
+        ids = [r[0] for r in con.execute(
+            "SELECT id FROM kg_edges WHERE src=? OR dst=?", (entity, entity))]
+        con.execute("DELETE FROM kg_edges WHERE src=? OR dst=?", (entity, entity))
+        con.execute("DELETE FROM kg_nodes WHERE name=?", (entity,))
+        if ids:
+            con.executemany("DELETE FROM kg_vecs WHERE edge_id=?", [(i,) for i in ids])
+        con.commit()
+    finally:
+        con.close()  # 异常路径也必须释放连接，否则写锁悬挂毒化整个进程
     return {"ok": True, "deleted": entity}
 
 
+def state_search(query: str, k: int = 5, prefix: str | None = None, offset: int = 0) -> dict:
+    """语义检索 state 账本：对每个 key 的值做向量缓存（写入时更新），cosine 召回
+    top-k，返回 key+预览+分数。向量缺失/过期时惰性补嵌；嵌入服务不可用则降级为
+    子串匹配。命中后用 state_read(key) 看全量。"""
+    import math
+    con = db.connect()
+    try:
+        con.execute(
+            "CREATE TABLE IF NOT EXISTS state_vecs("
+            "key TEXT PRIMARY KEY, updated REAL, text TEXT, vec BLOB)")
+        import time as _t
+        con.execute("DELETE FROM state_kv WHERE expires_at IS NOT NULL AND expires_at < ?",
+                    (_t.time(),))
+        if prefix:
+            rows = con.execute(
+                "SELECT key, value, updated FROM state_kv WHERE key GLOB ?",
+                (prefix.rstrip("*") + "*",)).fetchall()
+        else:
+            rows = con.execute("SELECT key, value, updated FROM state_kv").fetchall()
+        cache = {r[0]: (r[1], r[2], r[3]) for r in con.execute(
+            "SELECT key, updated, text, vec FROM state_vecs")}
+        # 惰性补齐过期/缺失向量（一次批量嵌入）
+        stale = []
+        for key, value, upd in rows:
+            c = cache.get(key)
+            if c is None or abs(c[0] - upd) > 0.5:
+                stale.append((key, value, upd))
+        if stale:
+            try:
+                from brain.embed import embed_texts
+                texts = [json.dumps(v, ensure_ascii=False)[:2000] for _k, v, _u in stale]
+                vecs = embed_texts(texts)
+                for (key, _v, upd), text, vec in zip(stale, texts, vecs):
+                    con.execute(
+                        "INSERT OR REPLACE INTO state_vecs(key, updated, text, vec) VALUES(?,?,?,?)",
+                        (key, upd, text, db.vec_to_blob(vec)))
+                    cache[key] = (upd, text, db.vec_to_blob(vec))
+                con.commit()
+            except Exception:
+                pass  # 嵌入不可用 → 走子串降级
+        from brain.embed import embed_query
+        qvec = embed_query(query)
+        scored = []
+        for key, value, upd in rows:
+            c = cache.get(key)
+            if c and c[2]:
+                sim = db.cosine(qvec, db.blob_to_vec(c[2]))
+            else:  # 子串降级
+                hay = json.dumps(value, ensure_ascii=False)
+                sim = 0.5 if query.lower() in hay.lower() else 0.0
+            scored.append((sim, key, upd, value))
+        scored.sort(reverse=True)
+        out = []
+        for sim, key, upd, value in scored[offset:offset + max(1, k)]:
+            preview = json.dumps(value, ensure_ascii=False)[:220]
+            out.append({"key": key, "score": round(sim, 4), "updated": upd,
+                        "preview": preview, "read_full": f"state_read(key='{key}')"})
+        return {"query": query, "results": out,
+                "_usage": "按分数取用；内容全量用 state_read(key)"}
+    finally:
+        con.close()
+def kg_invalidate(src: str, rel: str, dst: str, reason: str = "") -> dict:
+    """关系过时的正规入口（双时态）：置 invalid_at 保留历史，演化链可查——
+    不要用 kg_del 硬删（那会丢失"曾经成立过"的事实）。"""
+    import time as _t
+    con = db.connect()
+    try:
+        cur = con.execute(
+            "UPDATE kg_edges SET invalid_at=? "
+            "WHERE src=? AND rel=? AND dst=? AND invalid_at IS NULL",
+            (_t.time(), src, rel, dst))
+        con.commit()
+    finally:
+        con.close()
+    if cur.rowcount == 0:
+        return {"ok": False, "error": "未找到匹配的有效边（可能已失效或不存在），用 kg_query 确认"}
+    return {"ok": True, "invalidated": cur.rowcount, "edge": f"{src} -[{rel}]-> {dst}",
+            "reason": reason}
+def kg_prune(dry_run: bool = True) -> dict:
+    """清理孤儿节点（无任何边关联）。先跑 dry_run 看清单再动手。
+    注意：根因多在重复命名——prune 前先检查孤儿名单里是否有该合并的同名变体。"""
+    con = db.connect()
+    try:
+        orphans = [r[0] for r in con.execute(
+            "SELECT name FROM kg_nodes n WHERE NOT EXISTS("
+            "SELECT 1 FROM kg_edges e WHERE e.src=n.name OR e.dst=n.name)")]
+        if dry_run:
+            return {"ok": True, "orphans": orphans, "count": len(orphans),
+                    "note": "dry_run；确认后 kg_prune(dry_run=false) 执行删除"}
+        for name in orphans:
+            con.execute("DELETE FROM kg_nodes WHERE name=?", (name,))
+        con.commit()
+    finally:
+        con.close()
+    return {"ok": True, "removed": len(orphans), "names": orphans}
+def kg_stats() -> dict:
+    """KG 健康度：规模、类型分布、孤儿数、边类型 top。供定时整理与 project_status 引用。"""
+    con = db.connect()
+    try:
+        return _kg_stats_impl(con)
+    finally:
+        con.close()
 def project_status() -> dict:
     con = db.connect()
     per: dict = {}

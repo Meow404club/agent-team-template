@@ -43,6 +43,7 @@ def connect() -> sqlite3.Connection:
     con = sqlite3.connect(str(p), timeout=30)
     con.execute("PRAGMA journal_mode=WAL")
     _ensure_schema(con)
+    _migrate(con)
     return con
 
 
@@ -74,6 +75,24 @@ def _ensure_schema(con: sqlite3.Connection) -> None:
 
 
 # ---------------------------------------------------------------- sources ---
+
+def _migrate(con: sqlite3.Connection) -> None:
+    """增量列迁移（SQLite 无 ADD COLUMN IF NOT EXISTS，逐条 try）。
+    2026-09-01 记忆治理研究卡：memories supersede 演化链 / KG 双时态 / state TTL。"""
+    for stmt in (
+        "ALTER TABLE memories ADD COLUMN supersedes_id INTEGER",
+        "ALTER TABLE memories ADD COLUMN invalid_at REAL",
+        "ALTER TABLE kg_edges ADD COLUMN valid_at REAL",
+        "ALTER TABLE kg_edges ADD COLUMN invalid_at REAL",
+        "ALTER TABLE state_kv ADD COLUMN expires_at REAL",
+    ):
+        try:
+            con.execute(stmt)
+        except sqlite3.OperationalError:
+            pass  # 列已存在
+    con.commit()
+
+
 
 def load_sources() -> dict:
     with open(SOURCES_PATH, encoding="utf-8") as f:

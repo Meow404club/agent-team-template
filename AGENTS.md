@@ -106,6 +106,24 @@ BRANCH: work/<slug>（worktree ../<仓库名>-trees/<slug> 由 coder 自建）
   `sym_query`、`get_source`、`mappings_lookup`、`web_fetch`（浏览器指纹抓网页）、
   `refresh_index`、`project_status`。
 - 每次合并/决策/发现 bug 后必须写记忆；`docs/PROJECT_STATE.md` 同步镜像。
+- **记忆写入预算**：`remember` 只放可复用结论与阶段锚点，单条 ≤ ~1200 字；逐文件/
+  逐提交的细节写 state（tasks）与 docs 镜像，不进 remember。每阶段收官必须清理
+  已被锚点蒸馏的 handoff/merge/research 历史条目（硬删，防 recall 灌爆上下文）——
+  收官锚点必须先写全，删除才安全。
+- **KG 防爆闸门（MCP 层已强制）**：`kg_add` 幂等去重、拒绝把既有孤儿节点当端点；
+  命名前先 `kg_query` 查重，禁止同义变体——孤儿多半是重复命名的产物。
+- **记忆治理制度（机制按"生成模型依赖度"排序：零模型成本 > 借 agent > 需常驻模型）**：
+  - **演化链优先于删除**：关系过时用 `kg_invalidate`（双时态，保留历史）不用 kg_del；
+    记忆近同事实（相似度 ≥0.90）remember 自动 supersede（旧行失效+新行 supersedes_id）。
+  - **分层读取**：state_read() 无参=目录页（只看 key 元信息）→ state_search(query,
+    prefix, k, offset)=语义定位 → state_read(key, limit)=取内容；kg_query 必须带过滤
+    （禁全图导出）；语义找图三元组用 kg_search。
+  - **state 命名空间**：点分前缀即 namespace（tasks.xxx / tmp.xxx）；临时键用 tmp.*
+    并设 ttl_seconds（惰性清扫）——有界 schema 即增长控制。
+  - **定时整理**：kg_stats() 收官必看；孤儿 >20 / KG 节点 >500 / state_kv >100 键
+    即触发：kg_prune（dry→真删）+ 软删记忆硬清 + 账本陈旧条目蒸馏成锚点
+    （RAPTOR 式压缩，摘要借 agent 收官流程）+ tmp.* 过期清扫。
+  - 收官锚点必须先写全，删除才安全。
 
 ## 八、目录地图
 

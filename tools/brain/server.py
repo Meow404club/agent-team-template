@@ -233,6 +233,8 @@ def _coerce(params_spec, args: dict) -> dict:
         v = args[p["name"]]
         if p["type"] == "integer":
             v = int(v)
+        elif p["type"] == "number":
+            v = float(v)
         elif p["type"] == "boolean":
             v = bool(v)
         elif p["type"] == "string":
@@ -245,8 +247,8 @@ def _coerce(params_spec, args: dict) -> dict:
 
 
 def _input_schema(params_spec) -> dict:
-    ty = {"string": "string", "integer": "integer", "boolean": "boolean",
-          "array": "array", "object": "object", "any": None}
+    ty = {"string": "string", "integer": "integer", "number": "number",
+          "boolean": "boolean", "array": "array", "object": "object", "any": None}
     props = {}
     for p in params_spec:
         t = ty[p["type"]]
@@ -294,10 +296,16 @@ def handle_message(msg: dict) -> dict | None:
     elif method == "ping":
         return _reply(req_id, {})
     elif method == "tools/list":
-        return _reply(req_id, {"tools": [
-            {"name": name, "description": spec["desc"], "inputSchema": _input_schema(spec["params"])}
-            for name, spec in TOOLS.items()
-        ]})
+        tools_out = []
+        for name, spec in TOOLS.items():
+            entry = {"name": name, "description": spec["desc"]}
+            try:
+                entry["inputSchema"] = _input_schema(spec["params"])
+            except Exception as e:  # 单工具 schema 缺陷降级，绝不让 tools/list 整体失败
+                entry["inputSchema"] = {"type": "object"}
+                print(f"tools/list: schema fallback for {name}: {e!r}", file=sys.stderr, flush=True)
+            tools_out.append(entry)
+        return _reply(req_id, {"tools": tools_out})
     elif method == "tools/call":
         params = msg.get("params") or {}
         name = params.get("name")

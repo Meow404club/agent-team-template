@@ -14,7 +14,8 @@ maxTurns: 60
 
 ## 工作流（每个资料逐个过）
 
-1. `state_read()` + 读任务卡上下文——主 agent 会说明这批资料的调研背景。
+1. `state_read(key="harvest_log")`（历史裁决，避免重复裁决）+ 读任务卡上下文——
+   主 agent 会说明这批资料的调研背景。
 2. 读 `tmp/harvest/<name>/meta.json`（url/kind/files/bytes/date），抽样 2~3 个
    核心文件（Read/get_source）判断质量与相关性。
 3. **逐资料裁决**：

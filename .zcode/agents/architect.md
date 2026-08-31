@@ -12,8 +12,8 @@ maxTurns: 40
 
 ## 工作流
 
-1. 用 brain MCP：`state_read()`、`recall("<目标>")`、`kg_query(entity=<系统>)`
-   —— 已有决策不许重做。
+1. 用 brain MCP：`state_read()`（目录页，决策明细按 key 取）、`recall("<目标>")`、
+   `kg_query(entity=<系统>)` —— 已有决策不许重做。
 2. `search_code(sources=["<上游/老系统源>"])` 确认子系统边界与耦合面；每个模块
    边界必须引用源码证据（文件:行号）。source 名以 `tools/sources.json` 为准。
 3. 产出**模块卡**（每张含：名称、上游对应物清单、依赖、风险等级、验收标准、

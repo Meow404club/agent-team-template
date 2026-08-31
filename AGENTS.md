@@ -11,7 +11,8 @@
 
 ## 一、开局必做（每个新会话）
 
-1. `state_read()` 恢复状态；`project_status()` 看索引/worktree/提交概况。
+1. `state_read()`（目录页）恢复状态概览，需要哪本再按 key 取；
+   `project_status()` 看索引/worktree/提交概况与 memory_health。
    brain 未连接则先 `tools/services.sh start brain`（常驻 HTTP MCP，端点 127.0.0.1:8939/mcp）。
 2. `recall()`（语义记忆）查与本次目标相关的历史结论，避免重复调研。
 3. 读 `docs/PROJECT_STATE.md` 与 `docs/TODO.md` 镜像。
@@ -100,11 +101,13 @@ BRANCH: work/<slug>（worktree ../<仓库名>-trees/<slug> 由 coder 自建）
 
 ## 七、记忆体系（brain MCP）
 
-- 写：`remember(kind, text)`（语义记忆，自动嵌入）、`state_update`（账本）、
-  `kg_add`（结构关系，同时入语义索引）、`state_update(key="tasks")`（任务板）。
-- 读：`recall(query)`（语义检索历史结论）、`state_read`、`kg_query`、`search_code`、
-  `sym_query`、`get_source`、`mappings_lookup`、`web_fetch`（浏览器指纹抓网页）、
-  `refresh_index`、`project_status`。
+- 写：`remember(kind, text)`（语义记忆，近同事实自动 supersede）、
+  `state_update`（账本；tmp.* + ttl_seconds 即临时键）、`kg_add`（结构关系）、
+  `kg_invalidate`（关系过时置失效保留历史）、`state_update(key="tasks")`（任务板）。
+- 读：`recall(query)`、`state_read`（无参=目录页 / 按 key=内容）、`state_search`
+  （账本语义定位）、`kg_query`（必须带过滤）、`kg_search`、`kg_stats`（健康度）、
+  `search_code`、`sym_query`、`get_source`、`mappings_lookup`、`web_fetch`、
+  `harvest`（资料落盘）、`refresh_index`、`project_status`。
 - 每次合并/决策/发现 bug 后必须写记忆；`docs/PROJECT_STATE.md` 同步镜像。
 - **记忆写入预算**：`remember` 只放可复用结论与阶段锚点，单条 ≤ ~1200 字；逐文件/
   逐提交的细节写 state（tasks）与 docs 镜像，不进 remember。每阶段收官必须清理

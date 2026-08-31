@@ -37,7 +37,7 @@ maxTurns: 80
 
 ## 通用流程
 
-1. `state_read()` + `recall("<问题>")` + `kg_search("<问题>")` —— 已有结论不重查。
+1. `state_read()`（目录页，需要内容再按 key 取）+ `recall("<问题>")` + `kg_search("<问题>")` —— 已有结论不重查。
 2. 按模式执行证据链；若配置了映射表，遇到代号/混淆名先 `mappings_lookup`。
 3. 落账：`remember(kind="research", text="<一句话结论+证据>")`；
    选型/决策类结论加 `state_update(key="decisions", merge=true, ...)`；

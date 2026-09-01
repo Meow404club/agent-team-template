@@ -324,7 +324,11 @@ def handle_message(msg: dict) -> dict | None:
         try:
             payload = json.loads(text)
         except (json.JSONDecodeError, ValueError):
-            payload = {"result": text}
+            payload = None
+        if not isinstance(payload, dict):
+            # MCP 规范要求 structuredContent 是 record；list/标量包一层
+            # （search_code/sym_query/recall 返回数组）。
+            payload = {"result": payload if payload is not None else text}
         return _reply(req_id, {"content": [],
                                "structuredContent": payload, "isError": False})
     else:

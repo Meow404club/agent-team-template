@@ -4,7 +4,7 @@
 |---|---|---|
 | `guard-commit.sh` | ZCode PreToolUse(Bash) | 裸 `git commit`（无 `-S`）在 AI 发起时就地拦截，deny 并提示改用 `git commit -S -s` |
 | `pre-commit` | git commit | 拦截 tmp/、tools/.venv/、tools/config.json（密钥）、>5MB 文件、疑似 `sk-` API 密钥 |
-| `commit-msg` | git commit | 校验消息格式 `<type>(<scope>): <主题>`（type ∈ feat|fix|refactor|docs|chore|test|port|arch|qa|research）+ `Signed-off-by:`/`Task:` 标签 |
+| `commit-msg` | git commit | 校验消息格式 `<type>(<scope>)?: <主题>`（type 为小写词，词表不限）+ `Signed-off-by:`/`Task:` 标签 |
 | `pre-push` | git push | 全量 `git verify-commit`，任何无有效 GPG 签名的提交禁止推送 |
 
 ## 安装

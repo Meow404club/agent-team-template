@@ -32,7 +32,7 @@ git add <files> && git commit -S -s -m "<type>(<scope>): <主题>
 Task: <SLUG>"
 ```
 
-type ∈ feat|fix|refactor|docs|chore|test|port|arch|qa|research。
+type 用小写词（feat/fix/perf/release…词表不限，格式对即可）。
 `-s` 自动追加 Signed-off-by。禁止提交：tmp/ 下任何文件、手写生成器该产出的
 产物、超 5MB 文件、tools/config.json。
 

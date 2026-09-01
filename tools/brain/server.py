@@ -318,8 +318,15 @@ def handle_message(msg: dict) -> dict | None:
         except Exception as e:
             return _reply_err(req_id, -32602, str(e))
         text = _guarded(spec["impl"], **kwargs)
-        return _reply(req_id, {"content": [{"type": "text", "text": text}],
-                               "structuredContent": {"result": text}, "isError": False})
+        # 只带 structuredContent（content 留空保持规范兼容）——同一份 JSON 双份注入
+        # 纯浪费上下文。工具返回值本就是 JSON 字符串，解成原生对象放进
+        # structuredContent，省掉一层引号/换行转义（模型直接读结构化数据）。
+        try:
+            payload = json.loads(text)
+        except (json.JSONDecodeError, ValueError):
+            payload = {"result": text}
+        return _reply(req_id, {"content": [],
+                               "structuredContent": payload, "isError": False})
     else:
         if req_id is not None:
             return _reply_err(req_id, -32601, f"method not found: {method}")

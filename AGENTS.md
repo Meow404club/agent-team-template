@@ -35,8 +35,8 @@
 ① architect 出模块卡 → 你登记任务板（state key="tasks"）
 ② 同一批互不重叠的任务 → 并行派发多个 coder（后台运行）
      每个 coder 独占 ../<仓库名>-trees/<slug> worktree + work/<slug> 分支
-③ coder 返回 COMMITS hash → 立即派发 review-merge 审该分支
-④ review-merge 串行合入 main（main 是全局锁，一次只合一个分支）
+③ coder 返回 COMMITS hash → 立即派发 review-merge（多个并行卡可合并到一次派发）
+④ review-merge 串行合入 main（main 是全局锁：同一时刻只动一个分支）
 ⑤ 每次合并后：其余在途分支在下轮 review 前必须 rebase main
 ⑥ 全部落账：state(tasks/progress/decisions) + KG + docs 镜像
 ```
@@ -55,9 +55,10 @@
   再收结果——长任务不阻塞主会话，保住交互响应性。
 - **并行度 2~4**：超过 4 个并发 coder 时冲突与审查积压风险大于收益。
 - **合并串行**：任何时刻只允许一个 review-merge 在动 main。
-- **批量合并会话**：并行完成的多个分支尽量交给**同一个** review-merge 会话顺序
-  审查+合并（一次会话过完 main 锁，省去每分支单独派会的开销）；仅当单分支
-  审查异常复杂才拆独立会话。
+- **批量合并会话（上下文有界轮换）**：同批并行分支可交给同一 review-merge 会话
+  顺序审查+合并（省派会开销），但**单会话最多连续审 3 个分支即轮换**——审查
+  会话上下文过长会稀释注意力、漏检语义问题；新一批/新波次一律开新会话，
+  禁止把所有审查持续堆积给同一会话。仅当单分支审查异常复杂才单独拆会。
 - coder 死循环/超时 → 废弃分支（`git worktree remove` + 删分支 + status=aborted）
   重新拆卡，不救活烂摊子。
 

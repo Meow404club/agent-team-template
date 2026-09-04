@@ -82,6 +82,13 @@ mtime 增量，无改动零嵌入，真有变更时单轮秒级。开关与节�
 startup_delay_s/run_timeout_s`），生命周期日志 `tmp/index/autorefresh.log`，
 索引输出与手动 refresh 共用 `tmp/index/refresh.log`。
 
+## llama-server RSS 行为（非泄漏，有界高水位）
+
+变长请求会使 llama.cpp 把 compute/scratch 缓冲扩到**历史最大负载**对应的规模并
+长期持有（实测同规格批次连打 8 次零增长）——RSS 只升不降但上界 ≈ 基线+峰值
+scratch。处置：`services.sh doctor`（默认 embed>10GB / 其余>4GB 自动重启，
+可挂 cron）；MALLOC_TRIM 对此无效（缓冲未归还 glibc）。
+
 ## 资料收割管线（harvest → curator → 增量索引）
 
 1. researcher 调研中用 `harvest(url, name, kind)` 把反复参考的资料落盘

@@ -13,6 +13,11 @@ CTX_PER_SLOT="${CTX_PER_SLOT:-2048}"        # 每槽上下文：块 ≤2000 字�
 CTX=$((SLOTS * CTX_PER_SLOT))
 
 # AMD/HIP 环境变量（NVIDIA/CPU 环境可删除这三行）
+# RSS 行为实测：变长请求使 llama.cpp 把 compute/scratch 缓冲钉在历史最大负载上
+#（有界不泄漏、也永不归还）——超限用 services.sh doctor 重启。
+# 下面两个 env 只压 glibc 碎片，对 llama.cpp 自留缓冲无效。
+export MALLOC_ARENA_MAX=2
+export MALLOC_TRIM_THRESHOLD_=134217728
 export HSA_ENABLE_DXG_DETECTION=1
 export KFD_NPS_RELAX=1
 export PATH="$PATH:/opt/rocm/bin"

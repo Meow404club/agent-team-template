@@ -28,13 +28,13 @@ PROJECT_ROOT = TOOLS_DIR.parent
 DB_PATH = PROJECT_ROOT / "tmp" / "index" / "rag.db"
 SOURCES_PATH = TOOLS_DIR / "sources.json"
 
-os.environ.setdefault("GT6_RAG_DB", str(DB_PATH))
+os.environ.setdefault("BRAIN_RAG_DB", str(DB_PATH))
 
 RRF_K = 60
 
 
 def db_path() -> Path:
-    return Path(os.environ.get("GT6_RAG_DB", str(DB_PATH)))
+    return Path(os.environ.get("BRAIN_RAG_DB", str(DB_PATH)))
 
 
 def connect() -> sqlite3.Connection:
@@ -125,8 +125,12 @@ def iter_source_files(source: str, cfg: dict, limit_files: int | None = None):
     exc = cfg.get("exclude", [])
     n = 0
     for dirpath, dirnames, filenames in os.walk(root):
+        # prune 按目录名整棵剪枝（root="." 等大根场景避免走进无关子树——
+        # exclude 只滤文件，os.walk 仍会遍历）
+        prune = frozenset(cfg.get("prune", []))
         dirnames[:] = sorted(d for d in dirnames
-                             if d not in (".git", "node_modules", "build", ".gradle", "target"))
+                             if d not in (".git", "node_modules", "build", ".gradle", "target")
+                             and d not in prune)
         for fn in sorted(filenames):
             full = Path(dirpath) / fn
             rel_root = full.relative_to(root).as_posix()

@@ -50,7 +50,8 @@
       "AGENTS.md"
     ],
     "exclude": [],
-    "desc": "本项目自身的决策、状态与架构文档"
+    "desc": "本项目自身的决策、状态与架构文档",
+    "_note": "可选 \"prune\": [\"目录名\", ...]——os.walk 级整棵剪枝（exclude 只滤文件不省遍历）；大根场景如 root=\".\" 时排除 tmp/ 等"
   },
   "harvest": {
     "root": "tmp/harvest",

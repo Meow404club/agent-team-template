@@ -34,6 +34,12 @@ maxTurns: 80
 
 worktree 内 `git rebase main` 逐提交解决；语义冲突必须回查上游/老源码裁决，
 禁止随手选一边；解决后所有提交仍须通过 `git verify-commit`。
+**rebase/代 rebase 完整性核对（强制，事故教训）**：
+1. rebase 后 `git log --oneline <oldbase>..HEAD` 对提交数，逐笔 subject 与原链
+   对齐（勿用区间语法数数——`a..b` 排除起点自身，曾把 8 笔误读为 7）。
+2. **重签 ≠ 验证**：rebase/解冲突后必须实跑门禁（编译先金丝雀再全量），
+   手工拼缝只有测试能拦。
+3. 代他人 rebase 后交回时，声明你改了哪些非重放内容。
 
 ## 裁决与收尾
 
@@ -41,12 +47,13 @@ worktree 内 `git rebase main` 逐提交解决；语义冲突必须回查上游/
 ```bash
 cd ../<仓库名>-trees/<slug> && git rebase main   # 如落后
 cd <仓库根>
-git merge --no-ff work/<slug> -S -s -m "merge: <slug> 经审查合入
+git merge --no-ff work/<slug> -S -m "merge: <slug> 经审查合入
 
 Task: <slug>"
 git worktree remove ../<仓库名>-trees/<slug> && git branch -d work/<slug>
 ```
-落账：`state_update(key="tasks", value={"<slug>":{"status":"merged","merged_commit":"<hash>"}}, merge=true)`；
+落账：`state_update(key="tasks.<slug>", value={"status":"merged","merged_commit":"<hash>"}, merge=true)`
+（**平键**——严禁裸键 `tasks` 配 merge=true）；
 `kg_add("PORT_<模块>", "LANDED", "main")`；
 `remember(kind="merge", text="<slug> 合入 <hash>，要点…")`。
 

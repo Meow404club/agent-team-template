@@ -41,7 +41,8 @@
 ⑥ 全部落账：state(tasks/progress/decisions) + KG + docs 镜像
 ```
 
-任务板是唯一真相源，格式（`state_update(key="tasks")`）：
+任务板是唯一真相源，每卡一平键写入（`state_update(key="tasks.<slug>")`；
+**严禁裸键 `tasks` 配 merge=true**——连环字符串化事故教训）：
 ```json
 {"<slug>": {"status": "research|queued|in_progress|in_review|merged|aborted",
             "branch": "work/<slug>", "worktree": "../<仓库名>-trees/<slug>",
@@ -53,8 +54,12 @@
 - **后台派发优先**：Agent 派发一律 `run_in_background: true`（并行 coder 必然后台；单个
   architect/researcher/curator/debugger 同样后台跑），派发后立即回应用户、完成通知到达
   再收结果——长任务不阻塞主会话，保住交互响应性。
-- **并行度上限 8**：并发 coder 数按文件域隔离情况放宽，超过 8 个时冲突与审查
-  积压风险大于收益。
+- **并行度上限 6**（环境受限或不稳时应再收紧）：并发 coder 数按文件域隔离
+  情况放宽，超过 6 个时冲突、审查积压与环境不稳风险大于收益。
+- **池拉齐并发：coder 池未满即从池拉活**。冻结串行线只表达依赖，不是并发
+  默认值——coder 并发不满（<6）时，主会话应主动从 todo 池拉与在途文件域
+  不冲突的任务提前进本阶段（研究卡→architect→coder 全管线照走；共享缝以
+  tail-append+rebase+显式合并序消化）。
 - **合并串行**：任何时刻只允许一个 review-merge 在动 main。
 - **批量合并会话（上下文有界轮换 + 追加式派发）**：同批并行分支可交给同一
   review-merge 会话顺序审查+合并（省派会开销），但**单会话最多连续审 5 个分支

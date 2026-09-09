@@ -16,5 +16,6 @@ ACCEPTANCE: 可验证的完成标准（编译通过/测试/具体行为）
 BRANCH: work/<SLUG>（worktree ../<仓库名>-trees/<SLUG> 由 coder 自建）
 ```
 
-子代理返回 COMMITS 后：登记 state_update(key="tasks", value={"<slug>":{"status":"in_review","commits":[...]}}, merge=true)，
+子代理返回 COMMITS 后：登记 state_update(key="tasks.<slug>", value={"status":"in_review","commits":[...]}, merge=true)
+（平键；严禁裸键 tasks 配 merge=true），
 立即派发 review-merge。

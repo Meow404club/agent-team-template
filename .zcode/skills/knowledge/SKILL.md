@@ -39,8 +39,10 @@ description: "知识与状态记忆的写入规范：remember/recall 语义记�
 - **namespace 约定**：点分前缀即命名空间（`tasks.<slug>` / `decisions` / `tmp.<用途>`）；
   临时键一律 `tmp.*` 并设 `ttl_seconds`（到期惰性清扫）——有界 schema 即增长控制。
 
-- `tasks`：任务板（唯一真相源），`{"<slug>": {"status","branch","worktree","commits","owner","files_scope","note"}}`，
-  status ∈ research|queued|in_progress|in_review|merged|aborted。
+- `tasks.<slug>`：任务板，**每卡一平键**（`{"status","branch","worktree","commits","owner","files_scope","note"}`，
+  status ∈ research|queued|in_progress|in_review|merged|aborted）。
+  **严禁裸键 `tasks` 配 merge=true**——单卡更新会与既有大字典互踩（连环事故教训）；
+  读整板用 `state_read()` 目录页 + 按需 `state_read(key="tasks.<slug>")`。
 - `decisions`：merge 追加 `{"topic","decision","alternatives","evidence","date"}`。
 - `known_bugs`：merge 追加 `{"symptom","root_cause","fix","status"}`。
 - `progress`：覆盖式 `{"phase","done":[],"current","next"}`。

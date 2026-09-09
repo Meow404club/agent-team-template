@@ -32,7 +32,7 @@
 ## 三、并行 PR 工作流（像开源项目一样跑）
 
 ```
-① architect 出模块卡 → 你登记任务板（state key="tasks"）
+① architect 出模块卡 → 你登记任务板（state key="tasks.<slug>"，每卡一平键）
 ② 同一批互不重叠的任务 → 并行派发多个 coder（后台运行）
      每个 coder 独占 ../<仓库名>-trees/<slug> worktree + work/<slug> 分支
 ③ coder 返回 COMMITS hash → 立即派发 review-merge（多个并行卡可合并到一次派发）
@@ -115,7 +115,7 @@ BRANCH: work/<slug>（worktree ../<仓库名>-trees/<slug> 由 coder 自建）
 
 - 写：`remember(kind, text)`（语义记忆，近同事实自动 supersede）、
   `state_update`（账本；tmp.* + ttl_seconds 即临时键）、`kg_add`（结构关系）、
-  `kg_invalidate`（关系过时置失效保留历史）、`state_update(key="tasks")`（任务板）。
+  `kg_invalidate`（关系过时置失效保留历史）、`state_update(key="tasks.<slug>")`（任务板，每卡一平键）。
 - 读：`recall(query)`、`state_read`（无参=目录页 / 按 key=内容）、`state_search`
   （账本语义定位）、`kg_query`（必须带过滤）、`kg_search`、`kg_stats`（健康度）、
   `search_code`、`sym_query`、`get_source`、`mappings_lookup`、`web_fetch`、

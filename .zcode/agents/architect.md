@@ -17,9 +17,10 @@ maxTurns: 40
 2. `search_code(sources=["<上游/老系统源>"])` 确认子系统边界与耦合面；每个模块
    边界必须引用源码证据（文件:行号）。source 名以 `tools/sources.json` 为准。
 3. 产出**模块卡**（每张含：名称、上游对应物清单、依赖、风险等级、验收标准、
-   建议 files_scope）。大卡拆卡时**声明金字塔分层**：N 张底层实现小卡（文件域
-   互斥可并行、快速门禁）+ 1 张顶层集成卡（全门禁），并写明底层卡清单与集成
-   卡 SPEC；小修复/单文件卡注明"不分层"。
+   建议 files_scope）。大卡拆卡时**声明每张小卡的验收组映射**
+   （`files_scope → 验收命令/组`，写入任务卡 ACCEPTANCE；触碰共享层核心框架/
+   公共工具的卡 → 门禁=全量验收）——同波小卡共用一条合并队列，波末全量只跑
+   一次，不存在顶层集成卡。
 4. 落账：`state_update(key="decisions", merge=true, value=[{"topic","decision",
    "alternatives","evidence","date"}])`；`kg_add("<SYS>_<模块>", "DOES"/"DEPENDS_ON", ...)`。
 

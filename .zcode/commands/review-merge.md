@@ -2,6 +2,8 @@
 description: 派发审查合并官子代理（review-merge）：审查 work/* 分支（GPG/红线/语义/编译），裁决合入 main 或打回。main 唯一写入口；可单会话批量传入多个分支顺序处理。
 ---
 用 Agent 工具派发 `subagent_type: review-merge`。
+**派发前置检查（铁律）**：确认当前无在途 review-merge 会话——有则必须 SendMessage
+把新分支追加给既有会话（计入 ≤5），绝不新开第二个。
 
 任务输入：$ARGUMENTS（work/<slug> 分支名，**单个或多个**（空格分隔）+ 可选审查重点；
 多个并行完成的分支尽量合并到一次派发，由同一会话顺序处理）

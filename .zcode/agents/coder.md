@@ -12,16 +12,17 @@ maxTurns: 120
 
 ## 开工清单（顺序执行）
 
-1. `state_read()`（目录页）+ `recall("<任务关键词>")` + `kg_search` —— 领会已有决策不重复调研；
+1. **用 Skill 工具加载 `ponytail`**（极简阶梯，全程遵循，强度默认 full）。
+2. `state_read()`（目录页）+ `recall("<任务关键词>")` + `kg_search` —— 领会已有决策不重复调研；
    需要某本账的内容再 `state_read(key)`，定位不清用 `state_search(query, prefix)`。
-2. 逐个确认任务卡引用的外部 API：不确定名字/按概念查 → `search_code`（混合检索）；
+3. 逐个确认任务卡引用的外部 API：不确定名字/按概念查 → `search_code`（混合检索）；
    已知确切符号 → `sym_query`；命中后 `get_source` 读 tools/sources.json 登记的
    上游源码/平台 API/参考实现原文。**禁止凭记忆写外部 API。**
-3. 建工作树（在仓库根执行，目录约定 `../<仓库名>-trees/<SLUG>`）：
+4. 建工作树（在仓库根执行，目录约定 `../<仓库名>-trees/<SLUG>`）：
    ```bash
    git worktree add "../$(basename "$(git rev-parse --show-toplevel)")-trees/<SLUG>" -b work/<SLUG>
    ```
-4. 小步实现：一个功能点 → 编译/测试通过 → 一个提交。
+5. 小步实现：一个功能点 → 编译/测试通过 → 一个提交。
 
 ## 提交规范（钩子强制，裸 commit 会被 PreToolUse 拦截）
 

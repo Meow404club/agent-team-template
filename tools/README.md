@@ -73,6 +73,19 @@ tsx / go / rust / c / cpp（tree-sitter 官方 grammar，缺包自动跳过）+ 
 按节分块 + 其余扩展名 hard_split。资料源 `lang: "auto"` 时按扩展名逐文件解析
 （harvest 源默认 auto）。
 
+## SessionStart 上下文自动注入
+
+`tools/context_inject.py`：新会话自动注入压缩状态页（阶段/在途任务/近决策/
+已知 Bug/main 最新），≤40 行、恒 exit 0、SQLite 只读、git toplevel 自探测
+作用域（只在 brain 框架仓库内输出）。注册在**用户级** `~/.zcode/cli/config.json`：
+
+```json
+{"hooks": {"enabled": true, "events": {"SessionStart": [
+  {"matcher": "", "hooks": [{"type": "process",
+    "command": "<本仓库绝对路径>/tools/.venv/bin/python <本仓库绝对路径>/tools/context_inject.py",
+    "timeoutMs": 5000}]}]}}}
+```
+
 ## 周期性增量索引（autorefresh）
 
 brain 守护内置调度线程：启动 30s 后首轮、之后每轮间隔 600s，对配置的源

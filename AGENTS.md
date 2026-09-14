@@ -127,6 +127,9 @@ BRANCH: work/<slug>（worktree ../<仓库名>-trees/<slug> 由 coder 自建）
 3. **绝不直接改 main**：main 只接受 review-merge 的合并。
 4. **绝不手写生成器能产出的产物**：生成物一律走项目构建管线。
 5. **绝不留无记录的决策**：结论进 `remember()`/`state_update`，结构关系进 `kg_add`。
+6. **Hook 工程卫生**（新增 hook 时强制）：恒 exit 0（故障绝不阻塞会话）；≤5s 超时；
+   stdin JSON 容错；副作用事件去重锁；handler 不存在就整个不装；注入上下文必须
+   真数据，缺失就明说，禁止剧场输出（SessionStart 注入见 tools/context_inject.py）。
 
 ## 六、上下文工程纪律
 

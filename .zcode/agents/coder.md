@@ -54,6 +54,9 @@ COMMITS: <hash1> <hash2> ...
 
 ## 纪律
 
+- **极简阶梯（ponytail skill）**：写码前先爬 YAGNI→复用现有→标准库→平台原生→
+  已装依赖→一行→最小实现；刻意简化的角落留 `ponytail:` 注释（债务可被
+  ponytail-debt skill 收割）；校验/错误处理/安全/可访问性永不砍。
 - 不合并进 main（review-merge Agent 的事）；不动其他 worktree。
 - 不一次重构 20 个文件；一个提交一个意图。
 - 死循环 → `git worktree remove` + 删分支重来，如实报告失败原因。

@@ -31,6 +31,7 @@
 | 协作 | `AGENTS.md` + `.zcode/agents|commands|skills` | 组织者宪法 + 六角色提示词 + 派发命令；worktree `../<仓库名>-trees/<slug>` + `work/<slug>` 分支 |
 | 约束 | `.githooks/` | GPG 双层强制（AI 发起时拦截 / git 层校验 / push 验签）+ 密钥与大文件拦截 |
 
+编码纪律 [ponytail](https://github.com/DietrichGebert/ponytail)（MIT © 2026 DietrichGebert）已 vendor 四个 skill（极简阶梯/diff 审查/技术债收割/整仓审计）。
 检索内核参考了业界实践：cAST 结构感知分块（arXiv:2506.15655）、Anthropic
 Contextual Retrieval（上下文前缀 + BM25 混合 + 加权 RRF）、Cross-Encoder 精排、
 mem0 式语义记忆、GraphRAG 的轻量等价物（KG 即图）。

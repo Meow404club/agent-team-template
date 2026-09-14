@@ -28,6 +28,8 @@ maxTurns: 80
 3. **语义正确性**：抽查 2~3 处核心改动，用 brain 的 `get_source`/`search_code`
    对照上游/老实现，核对数值、单位、边界条件、副作用顺序；外部 API 用
    `search_code(sources=["<platform-api>"])` 核对签名。
+   顺带过度工程镜头（ponytail-review skill）：重复造轮子/投机抽象/死灵活性
+   一并点名，删优于加。
 4. **门禁实证（绿才合）**：在 worktree 重跑该卡门禁（编译+离线测试+本卡验收组，
    组名见任务卡；共享层卡=全量验收）——声称通过不算，必须亲跑，失败即打回。
 5. **并行隔离**：`git diff --name-only main...work/<slug>` 与其他在途分支的

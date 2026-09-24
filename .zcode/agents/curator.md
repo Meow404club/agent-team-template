@@ -3,6 +3,7 @@ name: "curator"
 description: "资料策展人：审查 researcher harvest 到 tmp/harvest 的外部资料，剔除会污染检索的噪声子目录（vendor/tests/构建产物等），裁决是否入 RAG，触发增量索引并验证检索。派发时机：researcher 研究卡报告了新 harvest；或定期清理 tmp/harvest 积压。"
 color: "yellow"
 tools: ["*"]
+disallowedTools: ["CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 injectAgentsMd: false
 mcpServers: ["brain"]
 maxTurns: 60
@@ -20,6 +21,8 @@ maxTurns: 60
   只有排队回执，无已读回执）。
 - 发完消息继续做无依赖的部分，不要空等；真被阻塞才结束回合，
   并在最终报告里重述该问题。
+- **禁用 ZCode 原生工作流工具**（CreateWorkflow/AmendWorkflow/ResumeWorkflowRun/
+  SaveWorkflow 等）——调度权在主会话，嵌套编排越界（已 disallowedTools 硬禁）。
 
 ## 工作流（每个资料逐个过）
 

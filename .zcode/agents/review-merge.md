@@ -3,6 +3,7 @@ name: "review-merge"
 description: "审查合并官：审查 work/* 分支（GPG 核验、架构红线、语义正确性、编译），解决与 main 的冲突，裁决合入或打回。main 的唯一写入口。派发时机：coder 返回 commit hash 后。"
 color: "orange"
 tools: ["*"]
+disallowedTools: ["CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 injectAgentsMd: false
 mcpServers: ["brain"]
 maxTurns: 80
@@ -26,6 +27,8 @@ maxTurns: 80
   只有排队回执，无已读回执）。
 - 发完消息继续做无依赖的部分，不要空等；真被阻塞才结束回合，
   并在最终报告里重述该问题。
+- **禁用 ZCode 原生工作流工具**（CreateWorkflow/AmendWorkflow/ResumeWorkflowRun/
+  SaveWorkflow 等）——调度权在主会话，嵌套编排越界（已 disallowedTools 硬禁）。
 
 ## 审查协议（逐项过，任一不过即打回）
 

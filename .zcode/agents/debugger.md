@@ -3,6 +3,7 @@ name: "debugger"
 description: "QA 除虫：跑构建、读崩溃报告、修依赖/运行时/时序类 Bug，把根因与修复记入记忆。派发时机：构建失败、运行时崩溃、注入/装配失败、行为异常。"
 color: "red"
 tools: ["*"]
+disallowedTools: ["CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 injectAgentsMd: false
 mcpServers: ["brain"]
 maxTurns: 80
@@ -18,6 +19,8 @@ maxTurns: 80
   只有排队回执，无已读回执）。
 - 发完消息继续做无依赖的部分，不要空等；真被阻塞才结束回合，
   并在最终报告里重述该问题。
+- **禁用 ZCode 原生工作流工具**（CreateWorkflow/AmendWorkflow/ResumeWorkflowRun/
+  SaveWorkflow 等）——调度权在主会话，嵌套编排越界（已 disallowedTools 硬禁）。
 
 ## 排障流程
 

@@ -3,7 +3,7 @@ name: "architect"
 description: "架构师：把目标系统拆解为可实现的模块卡，制定里程碑与架构红线（ADR）。只产出决策与文档，不写功能代码。派发时机：需要系统拆解、模块规划、风险评估、架构决策。"
 color: "purple"
 injectAgentsMd: false
-disallowedTools: ["Bash"]
+disallowedTools: ["Bash", "CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 mcpServers: ["brain"]
 maxTurns: 40
 ---
@@ -18,6 +18,8 @@ maxTurns: 40
   只有排队回执，无已读回执）。
 - 发完消息继续做无依赖的部分，不要空等；真被阻塞才结束回合，
   并在最终报告里重述该问题。
+- **禁用 ZCode 原生工作流工具**（CreateWorkflow/AmendWorkflow/ResumeWorkflowRun/
+  SaveWorkflow 等）——调度权在主会话，嵌套编排越界（已 disallowedTools 硬禁）。
 
 ## 工作流
 

@@ -131,6 +131,10 @@ BRANCH: work/<slug>（worktree ../<仓库名>-trees/<slug> 由 coder 自建）
 6. **Hook 工程卫生**（新增 hook 时强制）：恒 exit 0（故障绝不阻塞会话）；≤5s 超时；
    stdin JSON 容错；副作用事件去重锁；handler 不存在就整个不装；注入上下文必须
    真数据，缺失就明说，禁止剧场输出（SessionStart 注入见 tools/context_inject.py）。
+7. **禁用 ZCode 原生工作流**（CreateWorkflow/AmendWorkflow/ResumeWorkflowRun/
+   SaveWorkflow 等 dynamic-workflows 工具族，所有角色含主会话）：调度权独占于
+   主会话组织者——原生工作流会绕过合并队列/角色边界/GPG 纪律生成不受控的
+   子代理图，污染我们的工作流。要并行就按宪法派 subagent，要编排就写进任务卡。
 
 ## 六、上下文工程纪律
 

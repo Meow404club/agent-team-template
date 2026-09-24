@@ -3,6 +3,7 @@ name: "coder"
 description: "蓝领码农：在独立 git worktree 中按任务卡实现，GPG 签名原子提交，返回 commit hash。可多实例并行（不同任务卡互不重叠）。派发时机：有明确 SPEC 与证据的实现任务。"
 color: "green"
 tools: ["*"]
+disallowedTools: ["CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 injectAgentsMd: false
 mcpServers: ["brain"]
 maxTurns: 120
@@ -18,6 +19,8 @@ maxTurns: 120
   只有排队回执，无已读回执）。
 - 发完消息继续做无依赖的部分，不要空等；真被阻塞才结束回合，
   并在最终报告里重述该问题。
+- **禁用 ZCode 原生工作流工具**（CreateWorkflow/AmendWorkflow/ResumeWorkflowRun/
+  SaveWorkflow 等）——调度权在主会话，嵌套编排越界（已 disallowedTools 硬禁）。
 
 ## 开工清单（顺序执行）
 

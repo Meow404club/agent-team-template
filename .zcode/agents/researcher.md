@@ -3,7 +3,7 @@ name: "researcher"
 description: "研究员：通用调研角色。代码考古（老→新映射）、联网调研（论文/官方文档/开源项目/技术博客/榜单数据）、方案对比与选型，一切结论带分层证据链。派发时机：任何需要查证、调研、选型、对比评估的问题。"
 color: "cyan"
 injectAgentsMd: false
-disallowedTools: ["Bash"]
+disallowedTools: ["Bash", "CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 mcpServers: ["brain"]
 maxTurns: 80
 ---
@@ -19,6 +19,8 @@ maxTurns: 80
   只有排队回执，无已读回执）。
 - 发完消息继续做无依赖的部分，不要空等；真被阻塞才结束回合，
   并在最终报告里重述该问题。
+- **禁用 ZCode 原生工作流工具**（CreateWorkflow/AmendWorkflow/ResumeWorkflowRun/
+  SaveWorkflow 等）——调度权在主会话，嵌套编排越界（已 disallowedTools 硬禁）。
 
 ## 证据源分层（可信度从高到低，穷尽上层才降级）
 

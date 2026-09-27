@@ -186,6 +186,17 @@ TOOLS: dict[str, dict] = {
                 T("reason", "string", False, "失效原因（记入审计）")],
         desc="关系过时的正规入口（双时态）：置 invalid_at 保留历史，不物理删除。"
              "新事实取代旧关系时：先 kg_invalidate 旧边，再 kg_add 新边。"),
+    "kg_prune": dict(
+        impl=S.kg_prune,
+        params=[T("dry_run", "boolean", False, "默认 true 只列孤儿清单；false 才真删")],
+        desc="清理孤儿节点（无任何边关联的悬挂节点）。先 dry_run 看清单再执行；"
+             "孤儿常是重复命名的产物，prune 前先检查名单是否有该合并的同名变体。"
+             "定时整理（见 AGENTS.md 记忆制度）每阶段收官跑一次。"),
+    "kg_stats": dict(
+        impl=S.kg_stats,
+        params=[],
+        desc="知识图谱健康度：节点/边规模、孤儿数、类型分布、边类型 top、语义记忆活跃数。"
+             "会话开工与阶段收官时查看，孤儿>20 或节点>500 即应整理。"),
     "state_read": dict(
         impl=S.state_read,
         params=[T("key", "string", False, "限定 key；空则返回全部（每 key 最近 10 条，最新在前）"),
@@ -242,6 +253,15 @@ def _coerce(params_spec, args: dict) -> dict:
         elif p["type"] == "array":
             if v is not None and not isinstance(v, list):
                 v = [v]
+        elif p["type"] in ("object", "any") and isinstance(v, str):
+            # 客户端偶发把对象参数双编码成字符串（实测曾把任务板整体替换成字符串化的
+            # JSON）。防御：形如 JSON 的字符串解回对象，解不开就原样传。
+            s = v.strip()
+            if s[:1] in "{[":
+                try:
+                    v = json.loads(s)
+                except json.JSONDecodeError:
+                    pass
         kwargs[p["name"]] = v
     return kwargs
 

@@ -368,6 +368,22 @@ def _deep_merge(old, new):
     return new
 
 
+def _state_vec_sync(con, key: str, text: str, updated: float) -> None:
+    """state_search 的向量缓存：state_update 提交后尽力嵌入；失败静默（检索侧降级）。"""
+    try:
+        from brain.embed import embed_texts
+        con.execute(
+            "CREATE TABLE IF NOT EXISTS state_vecs("
+            "key TEXT PRIMARY KEY, updated REAL, text TEXT, vec BLOB)")
+        con.execute(
+            "INSERT OR REPLACE INTO state_vecs(key, updated, text, vec) VALUES(?,?,?,?)",
+            (key, updated, text[:2000], db.vec_to_blob(embed_texts([text[:2000]])[0])),
+        )
+        con.commit()
+    except Exception:
+        pass  # 嵌入服务不可用时 state 读写不受影响，state_search 降级为目录+子串
+
+
 def state_update(key: str, value, merge: bool = False, ttl_seconds: float | None = None) -> dict:
     import time as _t
     # agent 经 MCP 传参时偶发把结构序列化成 JSON 字符串——先解回结构体，
@@ -452,22 +468,35 @@ def kg_add(src: str, rel: str, dst: str, note: str = "",
         con.close()
     return {"ok": True, "edge": f"{src} -[{rel}]-> {dst}"}
 def kg_query(entity: str | None = None, rel: str | None = None, limit: int = 30) -> dict:
+    """按实体名/关系类型过滤查询边。两个过滤条件至少给一个——禁止全图导出；
+    按语义找三元组用 kg_search(query)，规模/健康度用 kg_stats()。
+    节点列表由命中边的端点推导，不做独立导出。"""
+    if not entity and not rel:
+        return {"error": "kg_query 需要 entity 或 rel 至少一个过滤条件（禁止全图导出）。"
+                         "按语义找三元组用 kg_search(query)；规模/健康度用 kg_stats()。"}
     con = db.connect()
-    q = "SELECT src, rel, dst, note FROM kg_edges WHERE 1=1"
-    args: list = []
-    if entity:
-        q += " AND (src LIKE ? OR dst LIKE ?)"
-        args += [f"%{entity}%", f"%{entity}%"]
-    if rel:
-        q += " AND rel LIKE ?"
-        args += [f"%{rel}%"]
-    q += " ORDER BY id DESC LIMIT ?"
-    args.append(limit)
-    edges = [dict(zip(("src", "rel", "dst", "note"), r)) for r in con.execute(q, args)]
-    nodes = [dict(zip(("name", "type", "note"), r))
-             for r in con.execute("SELECT name, type, note FROM kg_nodes ORDER BY id DESC LIMIT ?", (limit,))]
-    con.close()
-    return {"edges": edges, "nodes": nodes}
+    try:
+        q = "SELECT src, rel, dst, note FROM kg_edges WHERE 1=1"
+        args: list = []
+        if entity:
+            q += " AND (src LIKE ? OR dst LIKE ?)"
+            args += [f"%{entity}%", f"%{entity}%"]
+        if rel:
+            q += " AND rel LIKE ?"
+            args += [f"%{rel}%"]
+        q += " ORDER BY id DESC LIMIT ?"
+        args.append(limit)
+        edges = [dict(zip(("src", "rel", "dst", "note"), r)) for r in con.execute(q, args)]
+        nodes: list[dict] = []
+        if edges:
+            names = sorted({e["src"] for e in edges} | {e["dst"] for e in edges})
+            marks = ",".join("?" * len(names))
+            nodes = [dict(zip(("name", "type", "note"), r)) for r in con.execute(
+                f"SELECT name, type, note FROM kg_nodes WHERE name IN ({marks})", names)]
+    finally:
+        con.close()
+    return {"edges": edges, "nodes": nodes,
+            "_hint": "命中即读：需要上下文看 kg_search 语义召回；不要扩大 limit 当图浏览器用"}
 
 
 def kg_del(entity: str) -> dict:
@@ -539,7 +568,8 @@ def state_search(query: str, k: int = 5, prefix: str | None = None, offset: int 
         scored.sort(reverse=True)
         out = []
         for sim, key, upd, value in scored[offset:offset + max(1, k)]:
-            preview = json.dumps(value, ensure_ascii=False)[:220]
+            # value 是 state_kv 的原始 JSON 文本——直接切片，json.dumps 会二次编码
+            preview = value[:220] if isinstance(value, str) else json.dumps(value, ensure_ascii=False)[:220]
             out.append({"key": key, "score": round(sim, 4), "updated": upd,
                         "preview": preview, "read_full": f"state_read(key='{key}')"})
         return {"query": query, "results": out,

@@ -71,7 +71,7 @@ tools/services.sh start          # 或 tools/services.sh start brain
 | 1 | `AGENTS.md` | 项目名、目录地图（`tmp/` 下放什么资料）、领域相关铁律 |
 | 2 | `tools/sources.json` | 资料源注册表：上游/老源码、平台 API、官方文档、参考实现（由 `sources.example.json` 生成） |
 | 3 | `tools/config.json` | 嵌入 API 与 `query_instruction`（领域描述） |
-| 4 | `.zcode/agents/*.md` | 把 `<legacy>`/`<platform-api>` 等占位换成你的 sources key；补充领域红线（review-merge 的架构红线、debugger 的病灶速查） |
+| 4 | `.zcode/agents/*.md` | 把 `<legacy>`/`<platform-api>` 等占位换成你的 sources key；补充领域红线（review-merge 的架构红线、debugger 的病灶速查）。可选：frontmatter 加 `model:` 字段钉每个 subagent 的运行模型（YAML 支持注释；删掉该行=跟随会话默认） |
 | 5 | `docs/` 骨架 | PROJECT_STATE.md / TODO.md / RESEARCH-NOTES.md 填入项目信息 |
 
 可选：`.githooks/guard-commit.sh` 无需改动（自动探测仓库与 worktree 约定目录）；

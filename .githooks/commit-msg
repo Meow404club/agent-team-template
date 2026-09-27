@@ -16,6 +16,14 @@ if ! printf '%s' "$msg" | grep -qE '^(Signed-off-by:|Task:|Refs:)'; then
   exit 1
 fi
 
+# 重复 Signed-off-by 行检测：同一 commit message 出现 >=2 行 'Signed-off-by:'
+# 即告警（成因=rebase --signoff 重放已在已签消息上再签一行；git -s 只去重尾行，
+# 尾行后插入它物即失守）。纯观感问题：warn 不阻塞，恒 exit 0。
+sob_n=$(printf '%s\n' "$msg" | grep -c '^Signed-off-by:' || true)
+if [ "$sob_n" -ge 2 ]; then
+  echo "⚠ commit-msg: 检测到 ${sob_n} 行 'Signed-off-by:'（rebase -s 重放所致？）——建议去重后重提，仅告警不阻塞" >&2
+fi
+
 # GPG 签名存在性：gpg 条线以 'gpg: ' 开头（git log 展示格式）
 if [ -d "$(git rev-parse --git-dir)/rebase-merge" ] || [ -d "$(git rev-parse --git-dir)/rebase-apply" ]; then
   exit 0  # rebase 过程中的提交不强校验

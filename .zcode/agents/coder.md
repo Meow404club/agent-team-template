@@ -2,6 +2,8 @@
 name: "coder"
 description: "蓝领码农：在独立 git worktree 中按任务卡实现，GPG 签名原子提交，返回 commit hash。可多实例并行（不同任务卡互不重叠）。派发时机：有明确 SPEC 与证据的实现任务。"
 color: "green"
+# 推理档位：max 降手工拼缝类缺陷，成本敏感可改 high/medium 或删除
+thoughtLevel: max
 tools: ["*"]
 disallowedTools: ["CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 injectAgentsMd: false

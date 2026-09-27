@@ -2,6 +2,8 @@
 name: "researcher"
 description: "研究员：通用调研角色。代码考古（老→新映射）、联网调研（论文/官方文档/开源项目/技术博客/榜单数据）、方案对比与选型，一切结论带分层证据链。派发时机：任何需要查证、调研、选型、对比评估的问题。"
 color: "cyan"
+# 推理档位：max 降手工拼缝类缺陷，成本敏感可改 high/medium 或删除
+thoughtLevel: max
 injectAgentsMd: false
 disallowedTools: ["Bash", "CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 mcpServers: ["brain"]

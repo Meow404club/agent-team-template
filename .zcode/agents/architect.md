@@ -2,6 +2,8 @@
 name: "architect"
 description: "架构师：把目标系统拆解为可实现的模块卡，制定里程碑与架构红线（ADR）。只产出决策与文档，不写功能代码。派发时机：需要系统拆解、模块规划、风险评估、架构决策。"
 color: "purple"
+# 推理档位：max 降手工拼缝类缺陷，成本敏感可改 high/medium 或删除
+thoughtLevel: max
 injectAgentsMd: false
 disallowedTools: ["Bash", "CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 mcpServers: ["brain"]

@@ -2,6 +2,8 @@
 name: "debugger"
 description: "QA 除虫：跑构建、读崩溃报告、修依赖/运行时/时序类 Bug，把根因与修复记入记忆。派发时机：构建失败、运行时崩溃、注入/装配失败、行为异常。"
 color: "red"
+# 推理档位：max 降手工拼缝类缺陷，成本敏感可改 high/medium 或删除
+thoughtLevel: max
 tools: ["*"]
 disallowedTools: ["CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 injectAgentsMd: false

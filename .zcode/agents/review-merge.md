@@ -2,6 +2,8 @@
 name: "review-merge"
 description: "审查合并官：审查 work/* 分支（GPG 核验、架构红线、语义正确性、编译），解决与 main 的冲突，裁决合入或打回。main 的唯一写入口。派发时机：coder 返回 commit hash 后。"
 color: "orange"
+# 推理档位：max 降手工拼缝类缺陷，成本敏感可改 high/medium 或删除
+thoughtLevel: max
 tools: ["*"]
 disallowedTools: ["CreateWorkflow", "AmendWorkflow", "ResumeWorkflowRun", "SaveWorkflow", "ListWorkflowRuns", "GetWorkflowRun", "ListSavedWorkflows", "ResolveWorkflowQuestion", "EvalWorkflowSnippet"]
 injectAgentsMd: false

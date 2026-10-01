@@ -3,7 +3,8 @@
     "servers": {
       "brain": {
         "type": "http",
-        "url": "http://127.0.0.1:8939/mcp"
+        "url": "http://127.0.0.1:8939/mcp",
+        "timeoutMs": 180000
       }
     }
   }

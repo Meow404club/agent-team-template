@@ -22,6 +22,8 @@ import json
 import os
 import subprocess
 import sys
+import threading
+import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -49,6 +51,38 @@ INSTRUCTIONS = (
 
 SESSIONS: set[str] = set()
 
+# ---- 交互请求在途计数（索引让位协议的写入侧） --------------------------------
+# n>0 = brain 正在处理正常请求（嵌入/检索在占 GPU 槽）。后台索引进程
+# （index.py → embed._yield_to_interactive）每个嵌入批次发送前读本文件，
+# n>0 时暂停等待——索引吞吐让位于交互流量，避免饿死正常开发请求。
+# 读侧见 embed.py；文件只在 server 进程内写（锁内读改写+原子替换）。
+_INFLIGHT_PATH = TOOLS_DIR.parent / "tmp" / "index" / "inflight.json"
+_inflight_lock = threading.Lock()
+_inflight_n = 0
+
+
+def _inflight_write(n: int) -> None:
+    tmp = _INFLIGHT_PATH.with_suffix(".tmp")
+    try:
+        tmp.write_text(json.dumps({"n": n, "ts": time.time()}))
+        os.replace(tmp, _INFLIGHT_PATH)
+    except OSError:
+        pass  # 计数文件只是让位提示，写失败不影响请求主路径
+
+
+def _inflight_enter() -> None:
+    global _inflight_n
+    with _inflight_lock:
+        _inflight_n += 1
+        _inflight_write(_inflight_n)
+
+
+def _inflight_exit() -> None:
+    global _inflight_n
+    with _inflight_lock:
+        _inflight_n = max(0, _inflight_n - 1)
+        _inflight_write(_inflight_n)
+
 
 def _j(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, indent=1)
@@ -68,12 +102,16 @@ def tool_refresh_index(source: str | None = None) -> str:
 
 
 def _guarded(fn, **kwargs) -> str:
+    _inflight_enter()
     try:
-        return _j(fn(**kwargs))
-    except Exception as e:
-        import traceback
-        traceback.print_exc(file=sys.stderr)
-        return _j({"error": str(e)})
+        try:
+            return _j(fn(**kwargs))
+        except Exception as e:
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            return _j({"error": str(e)})
+    finally:
+        _inflight_exit()
 
 
 # 工具表：impl=实现；params=[(名, 类型, 必填, 描述)]；desc=工具描述（agent 提示词引用过）
@@ -415,6 +453,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    _inflight_write(0)  # 复位上一实例 kill -9 可能泄漏的计数
     if AR.start() is not None:
         print("autorefresh: periodic incremental indexing thread started", file=sys.stderr, flush=True)
     print(f"brain http server listening on http://{HOST}:{PORT}/mcp "

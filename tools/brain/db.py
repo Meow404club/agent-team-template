@@ -202,8 +202,9 @@ def index_source(con: sqlite3.Connection, source: str, cfg: dict,
         if not batch:
             return
         # contextual retrieval: embed & index the header+chunk composite
+        # polite=True：嵌入批次让位于 brain 在途交互请求（embed._yield_to_interactive）
         bodies = [b["context"] + "\n" + b["text"] for b in batch]
-        vecs = embed_texts(bodies) if bodies else []
+        vecs = embed_texts(bodies, polite=True) if bodies else []
         for i, b in enumerate(batch):
             con.execute(
                 "INSERT OR REPLACE INTO chunks(source, path, line, ord, header, text, vec) VALUES(?,?,?,?,?,?,?)",

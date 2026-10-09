@@ -95,6 +95,25 @@ mtime 增量，无改动零嵌入，真有变更时单轮秒级。开关与节�
 startup_delay_s/run_timeout_s`），生命周期日志 `tmp/index/autorefresh.log`，
 索引输出与手动 refresh 共用 `tmp/index/refresh.log`。
 
+## Subagent 状态登记表（agent_registry）
+
+`tools/agent_registry.py`：扫描 `~/.zcode/cli/agents/sess_*/agent_*/metadata.json`
+的权威 `status` 字段，列出全部 subagent 谁还 running、领的哪张卡、在哪个
+worktree。**派发/重派/会话压缩恢复前必查**——框架保证 agent 终态必有
+task-notification，没收到通知就是还活着；凭"WIP 零提交+SendMessage 失败"
+误判死亡重派会导致双 coder 同 worktree 并发（撞车事故教训）。零 ps 扫描：
+subagent 不是时时在跑命令，进程缺失不代表死亡。
+
+```
+python3 tools/agent_registry.py            # 只列 running（派发前必查）
+python3 tools/agent_registry.py --all      # 含终态，查状态史
+python3 tools/agent_registry.py --slug X   # 某 SLUG 的状态史
+python3 tools/agent_registry.py --json     # 机器可读
+```
+
+running 且 updatedAt 超 48h 视为崩溃残留（所有视图隐藏）；TO 列是
+SendMessage 直用的完整 `agent_<uuid>`。
+
 ## llama-server RSS 行为（非泄漏，有界高水位）
 
 变长请求会使 llama.cpp 把 compute/scratch 缓冲扩到**历史最大负载**对应的规模并

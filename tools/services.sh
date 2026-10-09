@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 服务总线：统一管理 brain MCP(HTTP :8939) + llama embed(:8937) + llama rerank(:8938)。
 # 用法: tools/services.sh {start|stop|restart|status|doctor} [brain|embed|rerank|all]
-#   doctor [阈值MB]  # RSS 越限自动重启（llama scratch 高水位滞留自愈，可挂 cron）
+#   doctor [阈值MB]  # RSS 越限自动重启（变长请求下 llama scratch 高水位滞留，见
+#                    # embed_server.sh 注释；阈值默认 embed 10240 / 其余 4096。可挂 cron）
 #   start          # 默认 all：起全部未运行的服务
 #   start embed    # 只起指定服务
 # 注意：llama /health 在模型加载期返回 503，探活以 HTTP 200 为准。
@@ -123,9 +124,9 @@ main() {
       local s
       for s in "${services[@]}"; do
         case $s in
-          embed) doctor_one "$s" "${EMBED_RSS_LIMIT:-10240}" ;;
-          brain) doctor_one "$s" "${BRAIN_RSS_LIMIT:-4096}" ;;
-          rerank) doctor_one "$s" "${RERANK_RSS_LIMIT:-4096}" ;;
+          embed) doctor_one "$s" "${3:-${EMBED_RSS_LIMIT:-10240}}" ;;
+          brain) doctor_one "$s" "${3:-${BRAIN_RSS_LIMIT:-4096}}" ;;
+          rerank) doctor_one "$s" "${3:-${RERANK_RSS_LIMIT:-4096}}" ;;
         esac
       done
       ;;

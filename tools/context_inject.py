@@ -6,6 +6,8 @@
 - 无副作用：SQLite 只读模式 + 不写任何文件
 - 作用域自探测：cwd 所在仓库根含 tools/brain/server.py 才注入（可挂用户级免信任审核）
 - 输出 ≤40 行（~500 token 预算）
+- stdout 必须是 {"additionalContext": ...} JSON（hook 协议严格校验，
+  纯文本会被丢弃不注入）
 """
 from __future__ import annotations
 
@@ -39,14 +41,13 @@ def git_line(root: Path, args: list[str]) -> str:
         return ""
 
 
-def main() -> None:
+def main() -> str:
     root = repo_root()
     if root is None:
-        return
+        return ""
     db = root / "tmp" / "index" / "rag.db"
     if not db.exists():
-        print("(brain 索引未建立：tools/.venv/bin/python tools/brain/index.py all)")
-        return
+        return "(brain 索引未建立：tools/.venv/bin/python tools/brain/index.py all)"
     try:
         con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=2)
         con.row_factory = sqlite3.Row
@@ -83,12 +84,14 @@ def main() -> None:
     if last:
         out.append(f"◆ main 最新: {last[:80]}｜worktree {n_wt} 个")
     out.append("◆ 说『恢复上下文』取全量装载；直接下达任务即从断点继续。")
-    print("\n".join(out[:40]))
+    return "\n".join(out[:40])
 
 
 if __name__ == "__main__":
     try:
-        main()
+        text = main()
+        if text:
+            print(json.dumps({"additionalContext": text}, ensure_ascii=False))
     except Exception:
         pass
     sys.exit(0)  # 恒 0：hook 故障不阻塞会话

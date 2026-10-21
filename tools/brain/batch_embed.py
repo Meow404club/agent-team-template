@@ -51,7 +51,10 @@ def _api_key(cfg: dict) -> str:
 
 def _http(url: str, key: str, data: bytes | None = None,
           headers: dict | None = None, timeout: int = 300, retries: int = 3):
-    """单次 API 调用（带瞬时错误重试）。返回 (status_code, body_bytes)。"""
+    """单次 API 调用（带瞬时错误重试）。返回 (status_code, body_bytes)。
+    重试覆盖读中断（IncompleteRead 等）——结果文件下载是 GB 级长传输，
+    断流曾杀死整片索引（批已计费未落库）；下载为幂等 GET，整体重试安全。"""
+    import http.client
     last = None
     for attempt in range(retries):
         req = urllib.request.Request(url, data=data, method="POST" if data else "GET")
@@ -63,7 +66,8 @@ def _http(url: str, key: str, data: bytes | None = None,
                 return resp.getcode(), resp.read()
         except urllib.error.HTTPError as e:
             return e.code, e.read()  # 4xx/5xx 交给调用方定性，不盲目重试
-        except (urllib.error.URLError, TimeoutError, OSError) as e:
+        except (urllib.error.URLError, TimeoutError, OSError,
+                http.client.HTTPException) as e:
             last = e
             time.sleep(min(30, (2 ** attempt) * 2) + random.random())
     raise RuntimeError(f"batch API 网络失败（重试 {retries} 次）: {url} : {last}")
@@ -191,7 +195,8 @@ def collect_group(base: str, key: str, job: dict, total: int,
     out_file = d.get("output_file_id")
     if not out_file:
         raise RuntimeError(f"batch {job['batch_id']} 无 output_file_id: {json.dumps(d, ensure_ascii=False)[:300]}")
-    code, body = _http(f"{base.rstrip('/')}/files/{out_file}/content", key, timeout=600)
+    code, body = _http(f"{base.rstrip('/')}/files/{out_file}/content", key,
+                       timeout=900, retries=6)
     if code >= 400:
         raise RuntimeError(f"files.content HTTP {code}: {body[:300]!r}")
     n_ok = 0

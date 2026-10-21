@@ -180,6 +180,17 @@ def _token_estimate(texts: list[str]) -> int:
     return int((total_chars - cjk) / 4 + cjk / 1.5)
 
 
+def batch_enabled() -> dict | None:
+    """阿里云百炼批量嵌入（embedding.batch 配置块，OpenAI 兼容 Batch File API）。
+    启用且 base_url/model 齐备才返回配置 dict；db.index_source 据此切整源攒批
+    模式，embed_texts 在 polite+量级达 min_texts 时路由到 brain.batch_embed。
+    api_key 允许走环境变量 DASHSCOPE_API_KEY（批客户端内解析）。"""
+    cfg = load_config().get("batch") or {}
+    if cfg.get("enabled") and cfg.get("base_url") and cfg.get("model"):
+        return cfg
+    return None
+
+
 def _post_batch_after_yield(texts: list[str]) -> list[list[float]]:
     _yield_to_interactive()
     return _post_batch_fit(texts)
@@ -213,6 +224,14 @@ def embed_texts(texts: list[str], polite: bool = False) -> list[list[float]]:
             prepared.append(t[:head] + "\n...\n" + t[-tail:])
         else:
             prepared.append(t)
+
+    # 阿里云百炼批量嵌入：仅索引构建路径（polite=True）且量级达 min_texts 才走
+    # 异步批任务（费用 50%）；日常检索（embed_query/state 缓存）与小增量恒直连。
+    if polite:
+        bcfg = batch_enabled()
+        if bcfg and len(prepared) >= int(bcfg.get("min_texts", 2000)):
+            from brain import batch_embed
+            return [_truncate(v, dims) for v in batch_embed.embed_texts_via_batch(prepared, bcfg)]
 
     # cut batches by item count and token budget
     batches: list[list[str]] = []

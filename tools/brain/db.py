@@ -190,22 +190,21 @@ def index_source(con: sqlite3.Connection, source: str, cfg: dict,
                  log=print) -> tuple[int, int]:
     """Index one source; returns (files_indexed, chunks_indexed)."""
     from brain.chunking import chunk_file, resolve_lang
-    from brain.embed import embed_texts
+    from brain.embed import embed_texts, batch_enabled
 
     lang_cfg = cfg.get("lang", "text")
     done_files = done_chunks = 0
     batch: list[dict] = []
     batch_meta: dict = {}
+    # 百炼 batch 模式：异步批面向大文件，512 粒度 flush 太碎——整源攒批、
+    # 末尾一次嵌入（min_texts 以下的小增量 drain 时自然回落直连，不建批任务）
+    defer = batch_enabled() is not None
+    pending: list[dict] = []
+    pending_meta: dict = {}
+    RAM_GUARD_ROWS = 200_000  # 攒批上限：超量先落一波，控内存也自然切批文件
 
-    def flush():
-        nonlocal done_files, done_chunks
-        if not batch:
-            return
-        # contextual retrieval: embed & index the header+chunk composite
-        # polite=True：嵌入批次让位于 brain 在途交互请求（embed._yield_to_interactive）
-        bodies = [b["context"] + "\n" + b["text"] for b in batch]
-        vecs = embed_texts(bodies, polite=True) if bodies else []
-        for i, b in enumerate(batch):
+    def write_rows(rows: list[dict], metas: dict, vecs) -> None:
+        for i, b in enumerate(rows):
             con.execute(
                 "INSERT OR REPLACE INTO chunks(source, path, line, ord, header, text, vec) VALUES(?,?,?,?,?,?,?)",
                 (source, b["rel"], b["line"], b["ord"], b["header"], b["text"], vec_to_blob(vecs[i])),
@@ -214,14 +213,40 @@ def index_source(con: sqlite3.Connection, source: str, cfg: dict,
                 "INSERT OR REPLACE INTO chunks_fts(source, path, ord, body) VALUES(?,?,?,?)",
                 (source, b["rel"], b["ord"], b["context"] + "\n" + b["text"]),
             )
-        for rel, meta in batch_meta.items():
+        for rel, meta in metas.items():
             con.execute(
                 "INSERT OR REPLACE INTO files(source, path, mtime, size, chunks) VALUES(?,?,?,?,?)",
                 (source, rel, meta["mtime"], meta["size"], meta["nchunks"]),
             )
-        done_files += len(batch_meta)
-        done_chunks += len(batch)
+
+    def drain():
+        nonlocal done_files, done_chunks
+        if not pending:
+            return
+        # contextual retrieval: embed & index the header+chunk composite
+        bodies = [b["context"] + "\n" + b["text"] for b in pending]
+        write_rows(pending, pending_meta, embed_texts(bodies, polite=True))
+        done_files += len(pending_meta)
+        done_chunks += len(pending)
         con.commit()
+        log(f"  [{source}] batch 落库: {done_files} files / {done_chunks} chunks")
+        pending.clear()
+        pending_meta.clear()
+
+    def flush():
+        nonlocal done_files, done_chunks
+        if not batch:
+            return
+        if defer:
+            pending.extend(batch)
+            pending_meta.update(batch_meta)
+        else:
+            # polite=True：嵌入批次让位于 brain 在途交互请求（embed._yield_to_interactive）
+            bodies = [b["context"] + "\n" + b["text"] for b in batch]
+            write_rows(batch, batch_meta, embed_texts(bodies, polite=True))
+            done_files += len(batch_meta)
+            done_chunks += len(batch)
+            con.commit()
         batch.clear()
         batch_meta.clear()
 
@@ -259,8 +284,12 @@ def index_source(con: sqlite3.Connection, source: str, cfg: dict,
         batch_meta[rel] = {"mtime": st.st_mtime, "size": st.st_size, "nchunks": len(chunks)}
         if len(batch) >= 512:
             flush()
-            log(f"  [{source}] {done_files} files / {done_chunks} chunks ...")
+            if not defer:
+                log(f"  [{source}] {done_files} files / {done_chunks} chunks ...")
+            if len(pending) >= RAM_GUARD_ROWS:
+                drain()
     flush()
+    drain()
     if limit_files is None:
         known = {r[0] for r in con.execute("SELECT path FROM files WHERE source=?", (source,))}
         seen = set()

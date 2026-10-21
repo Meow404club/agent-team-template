@@ -114,6 +114,30 @@ python3 tools/agent_registry.py --json     # 机器可读
 running 且 updatedAt 超 48h 视为崩溃残留（所有视图隐藏）；TO 列是
 SendMessage 直用的完整 `agent_<uuid>`。
 
+## 阿里云百炼 Batch 批量嵌入（可选）
+
+`tools/brain/batch_embed.py`：索引构建等大批量嵌入走百炼 Batch File API
+（OpenAI 兼容 `/files` + `/batches`，文档：<https://help.aliyun.com/zh/model-studio/batch-interfaces-compatible-with-openai>），
+费用仅实时调用 50%；**日常检索（embed_query/recall/state 缓存）与小增量
+（< `min_texts` 条）恒走直连 `/embeddings`**，不受影响。
+
+行为：`embedding.batch` 启用后，`index.py` 对每个源**整源攒批、末尾一次提交**
+（异步批面向大文件，512 粒度 flush 太碎）；量级不足 `min_texts` 时 drain 自动
+回落直连——autorefresh 小增量不会为几十条等异步批。批任务单文件限 5 万行
+/500MB，超量自动分片多批；`custom_id` 全局序号保证向量顺序还原。
+
+```
+# tools/config.json 的 embedding 内开 batch 块（见 config.example.json），
+# 或 api_key 走环境变量 DASHSCOPE_API_KEY
+python3 tools/brain/batch_embed.py status       # 批任务台账 + 实时状态
+python3 tools/brain/batch_embed.py cancel <id>  # 取消批任务
+```
+
+注意：批任务是异步的（`completion_window` 最长 24h，实际通常快得多）——全量
+重建期间 index 进程阻塞轮询，建议手动跑、别指望 autorefresh 窗口；批任务
+台账在 `tmp/index/batch_jobs.jsonl`。任何组失败即抛错（fail-loud：未写库
+不记账，重跑 `--force` 会重新计费）。
+
 ## llama-server RSS 行为（非泄漏，有界高水位）
 
 变长请求会使 llama.cpp 把 compute/scratch 缓冲扩到**历史最大负载**对应的规模并

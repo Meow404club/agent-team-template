@@ -12,7 +12,21 @@
     "interactive_retries": 1,
     "batch_timeout_s": 240,
     "truncate_dims": 0,
-    "query_instruction": "Instruct: Given a search query about <你的项目领域：语言/框架/主题>, retrieve relevant source code or documentation passages that answer the query\nQuery: "
+    "query_instruction": "Instruct: Given a search query about <你的项目领域：语言/框架/主题>, retrieve relevant source code or documentation passages that answer the query\nQuery: ",
+    "batch": {
+      "_note": "阿里云百炼 Batch File（OpenAI 兼容 /files + /batches）：索引构建等大批量嵌入走异步批任务=实时价 50%；日常检索/查询与小增量（<min_texts）恒走上方直连配置。启用后 index 整源攒批、末尾一次提交，进程会阻塞等待批完成（completion_window 最长 24h，全量重建建议手动跑）。api_key 也可用环境变量 DASHSCOPE_API_KEY；台账 CLI：python3 tools/brain/batch_embed.py status",
+      "enabled": false,
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "api_key": null,
+      "model": "text-embedding-v4",
+      "dimensions": 0,
+      "min_texts": 2000,
+      "completion_window": "24h",
+      "poll_interval_s": 60,
+      "max_wait_s": 93600,
+      "max_lines_per_file": 50000,
+      "max_bytes_per_file": 400000000
+    }
   },
   "autorefresh": {
     "_note": "brain 守护内置的周期性增量索引：mtime 增量（无改动零嵌入），独立子进程执行。缺省即按下值启用",

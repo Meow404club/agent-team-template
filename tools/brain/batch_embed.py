@@ -157,8 +157,11 @@ def submit_group(base: str, key: str, offset: int, texts: list[str], cfg: dict) 
 
 
 def wait_job(base: str, key: str, batch_id: str, cfg: dict) -> dict:
-    """轮询至终态。批任务 24h 完成窗口，间隔温和退避；网络抖动容忍连续多次失败。"""
-    interval = float(cfg.get("poll_interval_s", 60))
+    """轮询至终态。嵌入批通常分钟级完成——起步 15s、×1.5 温和退避、封顶 60s。
+    （旧版封顶 300s：批完成后平均白等 1-2 分钟才发现；管理 GET 便宜，快轮询
+    无成本。）网络抖动容忍连续多次失败。"""
+    interval = min(float(cfg.get("poll_interval_s", 60)), 15.0)
+    cap = max(30.0, min(float(cfg.get("poll_interval_s", 60)), 60.0))
     deadline = time.time() + float(cfg.get("max_wait_s", 93_600))
     net_fails = 0
     while time.time() < deadline:
@@ -177,7 +180,7 @@ def wait_job(base: str, key: str, batch_id: str, cfg: dict) -> dict:
                 raise
             print(f"[batch] {batch_id} 轮询失败（{net_fails}/10）: {e}", flush=True)
         time.sleep(interval)
-        interval = min(interval * 1.5, 300)
+        interval = min(interval * 1.5, cap)
     raise RuntimeError(f"batch {batch_id} 超过 max_wait_s 未到终态（可 CLI 查询后重试）")
 
 

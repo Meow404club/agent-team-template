@@ -196,8 +196,8 @@ def index_source(con: sqlite3.Connection, source: str, cfg: dict,
     done_files = done_chunks = 0
     batch: list[dict] = []
     batch_meta: dict = {}
-    # 百炼 batch 模式：异步批面向大文件，512 粒度 flush 太碎——整源攒批、
-    # 末尾一次嵌入（min_texts 以下的小增量 drain 时自然回落直连，不建批任务）
+    # 百炼 batch 模式：索引恒走异步批（半价，无时效性）；512 粒度 flush 太碎
+    # ——整源攒批、末尾一次嵌入
     defer = batch_enabled() is not None
     pending: list[dict] = []
     pending_meta: dict = {}

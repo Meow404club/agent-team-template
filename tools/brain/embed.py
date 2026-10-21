@@ -231,11 +231,11 @@ def embed_texts(texts: list[str], polite: bool = False) -> list[list[float]]:
         else:
             prepared.append(t)
 
-    # 阿里云百炼批量嵌入：仅索引构建路径（polite=True）且量级达 min_texts 才走
-    # 异步批任务（费用 50%）；日常检索（embed_query/state 缓存）与小增量恒直连。
+    # 阿里云百炼批量嵌入：索引构建路径（polite=True）恒走异步批任务（半价）——
+    # 索引无时效性，小批量走实时也是 2 倍价；日常检索恒直连。
     if polite:
         bcfg = batch_enabled()
-        if bcfg and len(prepared) >= int(bcfg.get("min_texts", 2000)):
+        if bcfg:
             from brain import batch_embed
             return [_truncate(v, dims) for v in batch_embed.embed_texts_via_batch(prepared, bcfg)]
 

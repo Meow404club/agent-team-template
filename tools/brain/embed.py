@@ -77,7 +77,13 @@ class _ExceedContextError(RuntimeError):
 
 def _post_batch(texts: list[str], retries: int | None = None) -> list[list[float]]:
     cfg = load_config()
-    payload = json.dumps({"model": cfg["model"], "input": texts}).encode("utf-8")
+    body = {"model": cfg["model"], "input": texts}
+    # 服务端 MRL 降维（如百炼 qwen3.7-text-embedding 默认 1024 维，须显式请求
+    # truncate_dims 才得到目标维度；本地 llama-server 忽略多余键）
+    _dims = int(cfg.get("truncate_dims", 0) or 0)
+    if _dims > 0:
+        body["dimensions"] = _dims
+    payload = json.dumps(body).encode("utf-8")
     headers = {"Content-Type": "application/json"}
     if cfg.get("api_key"):
         headers["Authorization"] = f"Bearer {cfg['api_key']}"

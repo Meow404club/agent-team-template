@@ -28,6 +28,12 @@
       "max_bytes_per_file": 400000000
     }
   },
+  "rerank": {
+    "_note": "可选：远程精排（阿里云百炼 DashScope 原生 rerank 端点，非 OpenAI 兼容，嵌套 input/parameters 体）。缺省=本地 llama-server :8938（BRAIN_RERANK_URL 可覆盖）；两者都不通自动回退融合序",
+    "base_url": null,
+    "api_key": null,
+    "model": "qwen3.7-text-rerank"
+  },
   "autorefresh": {
     "_note": "brain 守护内置的周期性增量索引：mtime 增量（无改动零嵌入），独立子进程执行。缺省即按下值启用",
     "enabled": true,

@@ -41,23 +41,53 @@ def _fts_query(query: str) -> str:
     return " OR ".join('"%s"' % t.replace('"', '""') for t in toks[:24])
 
 
-def _rerank(query: str, docs: list[str], timeout: int = 120) -> list[float] | None:
-    """Call the local llama-server /v1/rerank endpoint (Qwen3-Reranker).
+def _rerank_cfg() -> dict:
+    """config.json 的 rerank 块（DashScope 原生 rerank：嵌套 input/parameters 体，
+    非 OpenAI 兼容——base_url 指向完整端点）。缺省=本地 llama-server 离线模式。"""
+    if _rerank_cfg._cache is None:
+        from pathlib import Path as _P
+        try:
+            p = _P(__file__).resolve().parent.parent / "config.json"
+            _rerank_cfg._cache = (json.loads(p.read_text(encoding="utf-8")).get("rerank")) or {}
+        except Exception:
+            _rerank_cfg._cache = {}
+    return _rerank_cfg._cache
 
-    Returns scores aligned with docs, or None if the service is unavailable
-    (caller falls back to the fusion order).
-    """
+
+_rerank_cfg._cache = None
+
+
+def _rerank(query: str, docs: list[str], timeout: int = 120) -> list[float] | None:
+    """Cross-Encoder 精排。优先 config rerank 块（DashScope 原生端点，外网走系统
+    代理），否则本地 llama-server /v1/rerank（BRAIN_RERANK_URL 可覆盖）。返回与
+    docs 对齐的分数；服务不可用返回 None（调用方回退融合序）。"""
     import json as _json
     import urllib.request as _ur
-    base = os.environ.get("BRAIN_RERANK_URL", "http://127.0.0.1:8938/v1")
-    body = _json.dumps({"model": "reranker", "query": query, "documents": docs}).encode()
-    req = _ur.Request(base.rstrip("/") + "/rerank", data=body,
-                      headers={"Content-Type": "application/json"}, method="POST")
+    out = [0.0] * len(docs)
     try:
+        rcfg = _rerank_cfg()
+        if rcfg.get("base_url"):
+            body = _json.dumps({
+                "model": rcfg.get("model", "qwen3.7-text-rerank"),
+                "input": {"query": query, "documents": docs},
+                "parameters": {"top_n": len(docs), "return_documents": False},
+            }).encode()
+            req = _ur.Request(rcfg["base_url"], data=body, headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {rcfg.get('api_key', '')}"}, method="POST")
+            with _ur.build_opener().open(req, timeout=timeout) as resp:  # 外网：系统代理
+                data = _json.loads(resp.read().decode())
+            for r in (data.get("output") or {}).get("results", []):
+                if 0 <= r["index"] < len(docs):
+                    out[r["index"]] = float(r["relevance_score"])
+            return out
+        base = os.environ.get("BRAIN_RERANK_URL", "http://127.0.0.1:8938/v1")
+        body = _json.dumps({"model": "reranker", "query": query, "documents": docs}).encode()
+        req = _ur.Request(base.rstrip("/") + "/rerank", data=body,
+                          headers={"Content-Type": "application/json"}, method="POST")
         opener = _ur.build_opener(_ur.ProxyHandler({}))
         with opener.open(req, timeout=timeout) as resp:
             data = _json.loads(resp.read().decode())
-        out = [0.0] * len(docs)
         for r in data.get("results", []):
             if 0 <= r["index"] < len(docs):
                 out[r["index"]] = float(r["relevance_score"])
